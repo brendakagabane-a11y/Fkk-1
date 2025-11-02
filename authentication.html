@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FikaConnect - Sign In</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4f46e5',
+                        'primary-dark': '#4338ca',
+                        secondary: '#7c3aed',
+                        accent: '#ec4899',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .gradient-bg { background: linear-gradient(135deg, #4f46e5, #7c3aed); }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .user-type-card { transition: all 0.3s ease; cursor: pointer; }
+        .user-type-card:hover { transform: translateY(-5px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .user-type-card.selected { border-color: #4f46e5; background-color: rgba(79, 70, 229, 0.05); }
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .form-step {
+            display: none;
+        }
+        .form-step.active {
+            display: block;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+        .step {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #e5e7eb;
+            color: #6b7280;
+            font-weight: 600;
+            margin: 0 8px;
+            position: relative;
+        }
+        .step.active {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .step.completed {
+            background-color: #10b981;
+            color: white;
+        }
+        .step::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 100%;
+            width: 40px;
+            height: 2px;
+            background-color: #e5e7eb;
+            z-index: -1;
+        }
+        .step:last-child::after {
+            display: none;
+        }
+        .step.completed::after {
+            background-color: #10b981;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-truck-fast text-2xl"></i>
+                    <span class="text-xl font-bold">FikaConnect</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="#" class="text-white hover:text-gray-200">About</a>
+                    <a href="#" class="text-white hover:text-gray-200">Help</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="min-h-screen py-12">
+        <div class="container mx-auto px-4">
+            <div class="max-w-md mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden fade-in">
+                <!-- Auth Header -->
+                <div class="gradient-bg text-white p-8 text-center">
+                    <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-user-circle text-primary text-4xl"></i>
+                    </div>
+                    <h2 id="auth-title" class="text-3xl font-bold">Welcome Back</h2>
+                    <p id="auth-subtitle" class="mt-2 text-indigo-200">Sign in to continue to FikaConnect</p>
+                </div>
+                
+                <!-- Auth Tabs -->
+                <div class="flex border-b border-gray-200">
+                    <button id="tab-login" class="flex-1 py-4 font-semibold text-primary border-b-2 border-primary" onclick="switchTab('login')">
+                        Sign In
+                    </button>
+                    <button id="tab-signup" class="flex-1 py-4 font-semibold text-gray-500" onclick="switchTab('signup')">
+                        Sign Up
+                    </button>
+                </div>
+                
+                <!-- Auth Content -->
+                <div class="p-8">
+                    <!-- Login Form -->
+                    <div id="login-form" class="space-y-4">
+                        <div>
+                            <label class="block text-gray-700 mb-2 font-medium">Email or Phone</label>
+                            <div class="relative">
+                                <i class="fas fa-envelope absolute left-3 top-4 text-gray-400"></i>
+                                <input type="text" id="login-email" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="john@example.com">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-gray-700 mb-2 font-medium">Password</label>
+                            <div class="relative">
+                                <i class="fas fa-lock absolute left-3 top-4 text-gray-400"></i>
+                                <input type="password" id="login-password" class="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="••••••••">
+                                <button type="button" onclick="togglePasswordVisibility('login-password')" class="absolute right-3 top-4 text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="flex justify-between items-center mt-2">
+                                <label class="flex items-center text-sm text-gray-600">
+                                    <input type="checkbox" class="mr-2">
+                                    Remember me
+                                </label>
+                                <a href="#" class="text-sm text-primary hover:underline">Forgot password?</a>
+                            </div>
+                        </div>
+                        
+                        <button onclick="handleLogin()" id="login-btn" class="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition flex items-center justify-center">
+                            <span id="login-btn-text">Sign In</span>
+                            <div id="login-spinner" class="loading-spinner ml-2 hidden"></div>
+                        </button>
+                        
+                        <div class="relative my-6">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-gray-300"></div>
+                            </div>
+                            <div class="relative flex justify-center text-sm">
+                                <span class="px-2 bg-white text-gray-500">Or continue with</span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-3">
+                            <button onclick="handleGoogleLogin()" class="flex items-center justify-center py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                <i class="fab fa-google text-red-500 text-xl"></i>
+                            </button>
+                            <button onclick="handleFacebookLogin()" class="flex items-center justify-center py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                <i class="fab fa-facebook text-blue-600 text-xl"></i>
+                            </button>
+                            <button onclick="handlePhoneLogin()" class="flex items-center justify-center py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                <i class="fas fa-mobile-alt text-green-600 text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Signup Form -->
+                    <div id="signup-form" class="space-y-4 hidden">
+                        <!-- User Type Selection -->
+                        <div class="mb-6">
+                            <label class="block text-gray-700 mb-3 font-medium">I want to:</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="user-type-card border-2 border-gray-200 rounded-lg p-4 text-center" onclick="selectUserType('customer')">
+                                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                                        <i class="fas fa-shopping-bag text-blue-600 text-xl"></i>
+                                    </div>
+                                    <p class="font-semibold text-sm">Send/Receive</p>
+                                </div>
+                                <div class="user-type-card border-2 border-gray-200 rounded-lg p-4 text-center" onclick="selectUserType('seller')">
+                                    <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                                        <i class="fas fa-store text-purple-600 text-xl"></i>
+                                    </div>
+                                    <p class="font-semibold text-sm">Sell Products</p>
+                                </div>
+                                <div class="user-type-card border-2 border-gray-200 rounded-lg p-4 text-center" onclick="selectUserType('driver')">
+                                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                                        <i class="fas fa-truck text-green-600 text-xl"></i>
+                                    </div>
+                                    <p class="font-semibold text-sm">Drive</p>
+                                </div>
+                                <div class="user-type-card border-2 border-gray-200 rounded-lg p-4 text-center" onclick="selectUserType('business')">
+                                    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                                        <i class="fas fa-building text-orange-600 text-xl"></i>
+                                    </div>
+                                    <p class="font-semibold text-sm">Business</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step Indicators -->
+                        <div class="step-indicator">
+                            <div class="step active" id="step-1">1</div>
+                            <div class="step" id="step-2">2</div>
+                            <div class="step" id="step-3">3</div>
+                        </div>
+
+                        <!-- Step 1: Basic Information -->
+                        <div id="step-1-form" class="form-step active">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-gray-700 mb-2 font-medium">First Name</label>
+                                    <input type="text" id="signup-firstname" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="John">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 mb-2 font-medium">Last Name</label>
+                                    <input type="text" id="signup-lastname" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Doe">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Email Address</label>
+                                <div class="relative">
+                                    <i class="fas fa-envelope absolute left-3 top-4 text-gray-400"></i>
+                                    <input type="email" id="signup-email" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="john@example.com">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Phone Number</label>
+                                <div class="flex">
+                                    <div class="w-20 px-3 py-3 border border-gray-300 rounded-l-lg bg-gray-100 flex items-center justify-center font-medium">
+                                        +256
+                                    </div>
+                                    <input type="tel" id="signup-phone" class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="700 123 456">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Password</label>
+                                <div class="relative">
+                                    <i class="fas fa-lock absolute left-3 top-4 text-gray-400"></i>
+                                    <input type="password" id="signup-password" class="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="••••••••">
+                                    <button type="button" onclick="togglePasswordVisibility('signup-password')" class="absolute right-3 top-4 text-gray-400 hover:text-gray-600">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="mt-2">
+                                    <div class="flex items-center space-x-2">
+                                        <div id="strength-bar" class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                            <div id="strength-fill" class="h-full transition-all" style="width: 0%"></div>
+                                        </div>
+                                        <span id="strength-text" class="text-xs text-gray-500"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Confirm Password</label>
+                                <div class="relative">
+                                    <i class="fas fa-lock absolute left-3 top-4 text-gray-400"></i>
+                                    <input type="password" id="signup-confirm" class="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="••••••••">
+                                    <button type="button" onclick="togglePasswordVisibility('signup-confirm')" class="absolute right-3 top-4 text-gray-400 hover:text-gray-600">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-end mt-6">
+                                <button onclick="nextStep(2)" class="py-3 px-6 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition">
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Role-Specific Information -->
+                        <div id="step-2-form" class="form-step">
+                            <!-- Driver Information -->
+                            <div id="driver-info" class="hidden">
+                                <h3 class="text-lg font-semibold mb-4 text-gray-800">Driver Information</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Vehicle Type</label>
+                                        <select id="driver-vehicle-type" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <option value="">Select vehicle type</option>
+                                            <option value="motorcycle">Motorcycle</option>
+                                            <option value="sedan">Sedan</option>
+                                            <option value="pickup">Pickup Truck</option>
+                                            <option value="van">Van</option>
+                                            <option value="truck">Truck</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Vehicle Make & Model</label>
+                                        <input type="text" id="driver-vehicle-model" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. Toyota Hilux">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">License Plate</label>
+                                        <input type="text" id="driver-license-plate" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. UAA 123A">
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-gray-700 mb-2 font-medium">National ID Number</label>
+                                            <input type="text" id="driver-national-id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. CM12345678">
+                                        </div>
+                                        <div>
+                                            <label class="block text-gray-700 mb-2 font-medium">Driver's License Number</label>
+                                            <input type="text" id="driver-license-number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. DL12345678">
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Primary Operating District</label>
+                                        <select id="driver-district" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <option value="">Select district</option>
+                                            <option value="kampala">Kampala</option>
+                                            <option value="wakiso">Wakiso</option>
+                                            <option value="mukono">Mukono</option>
+                                            <option value="jinja">Jinja</option>
+                                            <option value="mbarara">Mbarara</option>
+                                            <option value="gulu">Gulu</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Vehicle Capacity (kg)</label>
+                                        <input type="number" id="driver-vehicle-capacity" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. 1000">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Years of Driving Experience</label>
+                                        <input type="number" id="driver-experience" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. 5">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Seller Information -->
+                            <div id="seller-info" class="hidden">
+                                <h3 class="text-lg font-semibold mb-4 text-gray-800">Business Information</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Business Name</label>
+                                        <input type="text" id="seller-business-name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. Fresh Farm Produce">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Business Type</label>
+                                        <select id="seller-business-type" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <option value="">Select business type</option>
+                                            <option value="agriculture">Agriculture & Farm Produce</option>
+                                            <option value="retail">Retail Store</option>
+                                            <option value="restaurant">Restaurant/Cafe</option>
+                                            <option value="handicrafts">Handicrafts & Artisan</option>
+                                            <option value="fashion">Fashion & Clothing</option>
+                                            <option value="electronics">Electronics</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Business Registration Number (if applicable)</label>
+                                        <input type="text" id="seller-registration-number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. 123456789">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Primary Region/Market</label>
+                                        <select id="seller-region" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <option value="">Select region</option>
+                                            <option value="central">Central Region</option>
+                                            <option value="eastern">Eastern Region</option>
+                                            <option value="northern">Northern Region</option>
+                                            <option value="western">Western Region</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Specific Market/District</label>
+                                        <input type="text" id="seller-market" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. Nakasero Market, Kampala">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Products/Services Description</label>
+                                        <textarea id="seller-products" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Describe your products or services" rows="3"></textarea>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Average Monthly Delivery Volume</label>
+                                        <select id="seller-delivery-volume" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <option value="">Select volume</option>
+                                            <option value="low">1-50 deliveries/month</option>
+                                            <option value="medium">51-200 deliveries/month</option>
+                                            <option value="high">201-500 deliveries/month</option>
+                                            <option value="very-high">500+ deliveries/month</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Business Information -->
+                            <div id="business-info" class="hidden">
+                                <h3 class="text-lg font-semibold mb-4 text-gray-800">Business Details</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Company Name</label>
+                                        <input type="text" id="business-company-name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. ABC Enterprises Ltd">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Industry</label>
+                                        <select id="business-industry" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <option value="">Select industry</option>
+                                            <option value="manufacturing">Manufacturing</option>
+                                            <option value="wholesale">Wholesale & Distribution</option>
+                                            <option value="ecommerce">E-commerce</option>
+                                            <option value="logistics">Logistics & Supply Chain</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Company Registration Number</label>
+                                        <input type="text" id="business-registration-number" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. 80010000000000">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Number of Employees</label>
+                                        <select id="business-employees" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <option value="">Select range</option>
+                                            <option value="1-10">1-10 employees</option>
+                                            <option value="11-50">11-50 employees</option>
+                                            <option value="51-200">51-200 employees</option>
+                                            <option value="201-500">201-500 employees</option>
+                                            <option value="500+">500+ employees</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-2 font-medium">Estimated Monthly Shipments</label>
+                                        <input type="number" id="business-shipments" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. 100">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between mt-6">
+                                <button onclick="prevStep(1)" class="py-3 px-6 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition">
+                                    Back
+                                </button>
+                                <button onclick="nextStep(3)" class="py-3 px-6 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition">
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Terms and Finalization -->
+                        <div id="step-3-form" class="form-step">
+                            <div class="space-y-4">
+                                <div class="bg-blue-50 p-4 rounded-lg">
+                                    <h3 class="font-semibold text-blue-800 mb-2">Account Review</h3>
+                                    <p class="text-blue-700 text-sm">Please review your information before submitting your application.</p>
+                                </div>
+                                
+                                <div id="review-info" class="space-y-3 text-sm">
+                                    <!-- Review information will be populated here -->
+                                </div>
+                                
+                                <div class="flex items-start">
+                                    <input type="checkbox" id="terms" class="w-4 h-4 text-primary mt-1 mr-2">
+                                    <label for="terms" class="text-sm text-gray-600">
+                                        I agree to FikaConnect's <a href="#" class="text-primary hover:underline">Terms of Service</a> and <a href="#" class="text-primary hover:underline">Privacy Policy</a>
+                                    </label>
+                                </div>
+                                
+                                <div id="driver-terms" class="hidden">
+                                    <div class="flex items-start">
+                                        <input type="checkbox" id="driver-agreement" class="w-4 h-4 text-primary mt-1 mr-2">
+                                        <label for="driver-agreement" class="text-sm text-gray-600">
+                                            I understand that my driver application requires admin approval and verification before I can start accepting deliveries.
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div id="seller-terms" class="hidden">
+                                    <div class="flex items-start">
+                                        <input type="checkbox" id="seller-agreement" class="w-4 h-4 text-primary mt-1 mr-2">
+                                        <label for="seller-agreement" class="text-sm text-gray-600">
+                                            I confirm that the business information provided is accurate and I agree to comply with FikaConnect's seller policies.
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between mt-6">
+                                <button onclick="prevStep(2)" class="py-3 px-6 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition">
+                                    Back
+                                </button>
+                                <button onclick="handleSignup()" id="signup-btn" class="py-3 px-6 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition flex items-center justify-center">
+                                    <span id="signup-btn-text">Create Account</span>
+                                    <div id="signup-spinner" class="loading-spinner ml-2 hidden"></div>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="relative my-6">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-gray-300"></div>
+                            </div>
+                            <div class="relative flex justify-center text-sm">
+                                <span class="px-2 bg-white text-gray-500">Or sign up with</span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-3">
+                            <button onclick="handleGoogleLogin()" class="flex items-center justify-center py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                <i class="fab fa-google text-red-500 text-xl"></i>
+                            </button>
+                            <button onclick="handleFacebookLogin()" class="flex items-center justify-center py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                <i class="fab fa-facebook text-blue-600 text-xl"></i>
+                            </button>
+                            <button onclick="handlePhoneLogin()" class="flex items-center justify-center py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                <i class="fas fa-mobile-alt text-green-600 text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Phone Verification Modal -->
+                    <div id="phone-verify-modal" class="hidden">
+                        <div class="text-center mb-6">
+                            <i class="fas fa-mobile-alt text-primary text-5xl mb-4"></i>
+                            <h3 class="text-xl font-bold mb-2">Phone Verification</h3>
+                            <p class="text-gray-600">Enter your phone number to receive a verification code</p>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-gray-700 mb-2 font-medium">Phone Number</label>
+                                <div class="flex">
+                                    <div class="w-20 px-3 py-3 border border-gray-300 rounded-l-lg bg-gray-100 flex items-center justify-center font-medium">
+                                        +256
+                                    </div>
+                                    <input type="tel" id="phone-number" class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="700 123 456">
+                                </div>
+                            </div>
+                            
+                            <div id="recaptcha-container"></div>
+                            
+                            <button onclick="sendVerificationCode()" class="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition">
+                                Send Code
+                            </button>
+                            
+                            <button onclick="closePhoneModal()" class="w-full py-2 text-gray-600 hover:text-gray-800">
+                                Back to sign in
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- OTP Verification Modal -->
+                    <div id="otp-verify-modal" class="hidden">
+                        <div class="text-center mb-6">
+                            <i class="fas fa-lock text-primary text-5xl mb-4"></i>
+                            <h3 class="text-xl font-bold mb-2">Enter Verification Code</h3>
+                            <p class="text-gray-600">We sent a code to <span id="phone-display" class="font-semibold"></span></p>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="flex justify-center space-x-2">
+                                <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center text-xl border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
+                                <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center text-xl border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
+                                <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center text-xl border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
+                                <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center text-xl border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
+                                <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center text-xl border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
+                                <input type="text" maxlength="1" class="otp-input w-12 h-12 text-center text-xl border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" />
+                            </div>
+                            
+                            <button onclick="verifyOTP()" class="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition">
+                                Verify Code
+                            </button>
+                            
+                            <div class="text-center">
+                                <button onclick="resendCode()" class="text-primary hover:underline text-sm">
+                                    Didn't receive code? Resend
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            signInWithPopup, 
+            GoogleAuthProvider, 
+            FacebookAuthProvider,
+            signInWithPhoneNumber,
+            RecaptchaVerifier,
+            updateProfile
+        } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            doc, 
+            setDoc,
+            getDoc,
+            serverTimestamp,
+            query,
+            where,
+            getDocs,
+            updateDoc,
+            onSnapshot
+        } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDSY0OUQOtY71QT1a4GnP-TNICJ8FNo35M",
+            authDomain: "sr-market-strategies.firebaseapp.com",
+            projectId: "sr-market-strategies",
+            storageBucket: "sr-market-strategies.firebasestorage.app",
+            messagingSenderId: "118475459994",
+            appId: "1:118475459994:web:e8ec9e157abb1ed3ec3e23",
+            measurementId: "G-HZ4E5L32XE"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // Make auth and db available globally
+        window.auth = auth;
+        window.db = db;
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+        window.signInWithPopup = signInWithPopup;
+        window.GoogleAuthProvider = GoogleAuthProvider;
+        window.FacebookAuthProvider = FacebookAuthProvider;
+        window.signInWithPhoneNumber = signInWithPhoneNumber;
+        window.RecaptchaVerifier = RecaptchaVerifier;
+        window.updateProfile = updateProfile;
+        window.collection = collection;
+        window.addDoc = addDoc;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.getDoc = getDoc;
+        window.serverTimestamp = serverTimestamp;
+        window.query = query;
+        window.where = where;
+        window.getDocs = getDocs;
+        window.updateDoc = updateDoc;
+        window.onSnapshot = onSnapshot;
+    </script>
+
+    <!-- Auto-Initialization Script -->
+    <script type="module">
+        class FirestoreInitializer {
+            constructor() {
+                this.isInitialized = false;
+            }
+
+            async initializeApp() {
+                if (this.isInitialized) return true;
+
+                try {
+                    // Check if admin user exists, if not create one
+                    await this.initializeAdminUsers();
+                    
+                    // Initialize system settings
+                    await this.initializeSettings();
+                    
+                    this.isInitialized = true;
+                    console.log("Firestore initialized successfully!");
+                    return true;
+                } catch (error) {
+                    console.error("Error initializing Firestore:", error);
+                    return false;
+                }
+            }
+
+            async initializeAdminUsers() {
+                const adminUserId = "admin-user-1";
+                
+                try {
+                    const adminDoc = await getDoc(doc(db, "adminUsers", adminUserId));
+                    
+                    if (!adminDoc.exists()) {
+                        await setDoc(doc(db, "adminUsers", adminUserId), {
+                            userId: adminUserId,
+                            email: "admin@fikaconnect.com",
+                            role: "super-admin",
+                            permissions: ["users.read", "users.write", "deliveries.manage", "payments.manage", "settings.manage"],
+                            isActive: true,
+                            createdAt: serverTimestamp(),
+                            updatedAt: serverTimestamp()
+                        });
+                        console.log("Admin user created automatically");
+                    }
+                } catch (error) {
+                    console.error("Error initializing admin users:", error);
+                }
+            }
+
+            async initializeSettings() {
+                const defaultSettings = [
+                    {
+                        key: "delivery_base_fee",
+                        value: 5000,
+                        type: "number",
+                        description: "Base delivery fee in UGX"
+                    },
+                    {
+                        key: "delivery_per_km_rate", 
+                        value: 500,
+                        type: "number",
+                        description: "Delivery fee per kilometer in UGX"
+                    },
+                    {
+                        key: "platform_commission",
+                        value: 15,
+                        type: "number",
+                        description: "Platform commission percentage"
+                    },
+                    {
+                        key: "currency",
+                        value: "UGX",
+                        type: "string",
+                        description: "Default currency"
+                    },
+                    {
+                        key: "min_delivery_value",
+                        value: 3000,
+                        type: "number",
+                        description: "Minimum delivery value in UGX"
+                    },
+                    {
+                        key: "max_delivery_weight",
+                        value: 50,
+                        type: "number",
+                        description: "Maximum delivery weight in kg"
+                    }
+                ];
+
+                try {
+                    for (const setting of defaultSettings) {
+                        const settingRef = doc(db, "settings", setting.key);
+                        const settingDoc = await getDoc(settingRef);
+                        
+                        if (!settingDoc.exists()) {
+                            await setDoc(settingRef, {
+                                ...setting,
+                                updatedBy: "system",
+                                updatedAt: serverTimestamp()
+                            });
+                        }
+                    }
+                    console.log("Settings initialized automatically");
+                } catch (error) {
+                    console.error("Error initializing settings:", error);
+                }
+            }
+        }
+
+        // Create global instance
+        window.firestoreInitializer = new FirestoreInitializer();
+    </script>
+
+    <!-- Firestore Utilities -->
+    <script type="module">
+        class FirestoreUtils {
+            constructor(db) {
+                this.db = db;
+            }
+
+            // Generic function to create any document (automatically creates collection)
+            async createDocument(collectionName, documentId, data) {
+                try {
+                    const docRef = doc(this.db, collectionName, documentId);
+                    await setDoc(docRef, {
+                        ...data,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+                    return documentId;
+                } catch (error) {
+                    console.error(`Error creating ${collectionName} document:`, error);
+                    throw error;
+                }
+            }
+
+            // Get system setting with fallback
+            async getSetting(key, defaultValue = null) {
+                try {
+                    const settingRef = doc(this.db, "settings", key);
+                    const settingDoc = await getDoc(settingRef);
+                    
+                    if (settingDoc.exists()) {
+                        return settingDoc.data().value;
+                    } else {
+                        // Create the setting with default value if it doesn't exist
+                        if (defaultValue !== null) {
+                            await this.createDocument("settings", key, {
+                                key,
+                                value: defaultValue,
+                                type: typeof defaultValue,
+                                description: `Auto-created setting for ${key}`,
+                                updatedBy: "system"
+                            });
+                        }
+                        return defaultValue;
+                    }
+                } catch (error) {
+                    console.error("Error getting setting:", error);
+                    return defaultValue;
+                }
+            }
+
+            // Check if user is admin
+            async isUserAdmin(userId) {
+                try {
+                    const adminRef = doc(this.db, "adminUsers", userId);
+                    const adminDoc = await getDoc(adminRef);
+                    return adminDoc.exists() && adminDoc.data().isActive;
+                } catch (error) {
+                    console.error("Error checking admin status:", error);
+                    return false;
+                }
+            }
+        }
+
+        // Initialize and export
+        const firestoreUtils = new FirestoreUtils(db);
+        window.firestoreUtils = firestoreUtils;
+    </script>
+
+    <script>
+        // Global variables
+        let selectedUserType = 'customer';
+        let currentStep = 1;
+        let confirmationResult = null;
+        let recaptchaVerifier = null;
+        
+        // DOM Elements
+        const loginForm = document.getElementById('login-form');
+        const signupForm = document.getElementById('signup-form');
+        const tabLogin = document.getElementById('tab-login');
+        const tabSignup = document.getElementById('tab-signup');
+        const authTitle = document.getElementById('auth-title');
+        const authSubtitle = document.getElementById('auth-subtitle');
+        const phoneVerifyModal = document.getElementById('phone-verify-modal');
+        const otpVerifyModal = document.getElementById('otp-verify-modal');
+        const phoneDisplay = document.getElementById('phone-display');
+        
+        // Enhanced user creation with automatic collection setup
+        async function createUserWithAutoSetup(userData) {
+            try {
+                const userRef = doc(db, "users", userData.uid);
+                
+                // Create user document - this automatically creates the users collection
+                await setDoc(userRef, {
+                    ...userData,
+                    createdAt: serverTimestamp(),
+                    lastLogin: serverTimestamp(),
+                    status: userData.userType === 'driver' ? 'pending' : 'active',
+                    verified: false,
+                    settings: {
+                        notifications: true,
+                        emailAlerts: true,
+                        smsAlerts: true,
+                        language: "en",
+                        currency: "UGX"
+                    },
+                    wallet: {
+                        balance: 0,
+                        currency: "UGX",
+                        lastTransaction: serverTimestamp()
+                    },
+                    stats: {
+                        totalDeliveries: 0,
+                        completedDeliveries: 0,
+                        totalSpent: 0,
+                        rating: 0,
+                        reviewCount: 0
+                    }
+                });
+
+                // If user is a driver, create driver approval document
+                if (userData.userType === 'driver' && userData.driverInfo) {
+                    await createDriverApprovalRequest(userData.uid, userData);
+                }
+
+                return true;
+            } catch (error) {
+                console.error("Error creating user:", error);
+                throw error;
+            }
+        }
+
+        // Enhanced driver approval creation
+        async function createDriverApprovalRequest(userId, userData) {
+            try {
+                const approvalRef = doc(db, "driverApprovals", userId);
+                
+                await setDoc(approvalRef, {
+                    userId: userId,
+                    driverName: `${userData.firstName} ${userData.lastName}`,
+                    email: userData.email,
+                    phone: userData.phone,
+                    vehicleType: userData.driverInfo.vehicleType,
+                    vehicleModel: userData.driverInfo.vehicleModel,
+                    licensePlate: userData.driverInfo.licensePlate,
+                    nationalId: userData.driverInfo.nationalId,
+                    licenseNumber: userData.driverInfo.licenseNumber,
+                    district: userData.driverInfo.district,
+                    status: "pending",
+                    submittedAt: serverTimestamp(),
+                    reviewedBy: null,
+                    reviewedAt: null,
+                    notes: "",
+                    documentUrls: userData.driverInfo.documents || {}
+                });
+
+                console.log("Driver approval request created automatically");
+            } catch (error) {
+                console.error("Error creating driver approval:", error);
+                throw error;
+            }
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Set up password strength indicator
+            document.getElementById('signup-password').addEventListener('input', checkPasswordStrength);
+            
+            // Set up OTP input navigation
+            setupOTPInputs();
+            
+            // Auto-focus first input
+            document.getElementById('login-email').focus();
+            
+            // Initialize Firestore automatically
+            try {
+                await window.firestoreInitializer.initializeApp();
+                console.log('Firestore collections ready for use');
+            } catch (error) {
+                console.error('Failed to initialize Firestore:', error);
+            }
+        });
+        
+        // Switch between login and signup tabs
+        function switchTab(tab) {
+            if (tab === 'login') {
+                tabLogin.classList.add('text-primary', 'border-primary');
+                tabLogin.classList.remove('text-gray-500');
+                tabSignup.classList.add('text-gray-500');
+                tabSignup.classList.remove('text-primary', 'border-primary');
+                loginForm.classList.remove('hidden');
+                signupForm.classList.add('hidden');
+                authTitle.textContent = 'Welcome Back';
+                authSubtitle.textContent = 'Sign in to continue to FikaConnect';
+            } else {
+                tabSignup.classList.add('text-primary', 'border-primary');
+                tabSignup.classList.remove('text-gray-500');
+                tabLogin.classList.add('text-gray-500');
+                tabLogin.classList.remove('text-primary', 'border-primary');
+                signupForm.classList.remove('hidden');
+                loginForm.classList.add('hidden');
+                authTitle.textContent = 'Create Account';
+                authSubtitle.textContent = 'Join FikaConnect today';
+                
+                // Reset to step 1 when switching to signup
+                currentStep = 1;
+                document.querySelectorAll('.form-step').forEach(step => step.classList.remove('active'));
+                document.querySelectorAll('.step').forEach(step => {
+                    step.classList.remove('active', 'completed');
+                });
+                document.getElementById('step-1-form').classList.add('active');
+                document.getElementById('step-1').classList.add('active');
+            }
+        }
+        
+        // Select user type for signup
+        function selectUserType(type) {
+            selectedUserType = type;
+            
+            // Remove selected class from all cards
+            document.querySelectorAll('.user-type-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            
+            // Add selected class to clicked card
+            event.currentTarget.classList.add('selected');
+            
+            // Show appropriate form in step 2
+            document.getElementById('driver-info').classList.add('hidden');
+            document.getElementById('seller-info').classList.add('hidden');
+            document.getElementById('business-info').classList.add('hidden');
+            
+            if (type === 'driver') {
+                document.getElementById('driver-info').classList.remove('hidden');
+            } else if (type === 'seller') {
+                document.getElementById('seller-info').classList.remove('hidden');
+            } else if (type === 'business') {
+                document.getElementById('business-info').classList.remove('hidden');
+            }
+            
+            // Update terms visibility
+            document.getElementById('driver-terms').classList.add('hidden');
+            document.getElementById('seller-terms').classList.add('hidden');
+            
+            if (type === 'driver') {
+                document.getElementById('driver-terms').classList.remove('hidden');
+            } else if (type === 'seller') {
+                document.getElementById('seller-terms').classList.remove('hidden');
+            }
+        }
+        
+        // Navigate between form steps
+        function nextStep(step) {
+            // Validate current step before proceeding
+            if (!validateStep(currentStep)) {
+                showToast('Please fill in all required fields correctly.', 'error');
+                return;
+            }
+            
+            // Hide current step
+            document.getElementById(`step-${currentStep}-form`).classList.remove('active');
+            document.getElementById(`step-${currentStep}`).classList.remove('active');
+            
+            // Show next step
+            document.getElementById(`step-${step}-form`).classList.add('active');
+            document.getElementById(`step-${step}`).classList.add('active');
+            
+            // Mark previous step as completed
+            document.getElementById(`step-${currentStep}`).classList.add('completed');
+            
+            currentStep = step;
+            
+            // If moving to step 3, populate review information
+            if (step === 3) {
+                populateReviewInfo();
+            }
+        }
+        
+        function prevStep(step) {
+            // Hide current step
+            document.getElementById(`step-${currentStep}-form`).classList.remove('active');
+            document.getElementById(`step-${currentStep}`).classList.remove('active');
+            
+            // Show previous step
+            document.getElementById(`step-${step}-form`).classList.add('active');
+            document.getElementById(`step-${step}`).classList.add('active');
+            
+            // Remove completed status from current step
+            document.getElementById(`step-${currentStep}`).classList.remove('completed');
+            
+            currentStep = step;
+        }
+        
+        // Validate form step
+        function validateStep(step) {
+            if (step === 1) {
+                const firstName = document.getElementById('signup-firstname').value;
+                const lastName = document.getElementById('signup-lastname').value;
+                const email = document.getElementById('signup-email').value;
+                const phone = document.getElementById('signup-phone').value;
+                const password = document.getElementById('signup-password').value;
+                const confirmPassword = document.getElementById('signup-confirm').value;
+                
+                if (!firstName || !lastName || !email || !phone || !password || !confirmPassword) {
+                    return false;
+                }
+                
+                if (password !== confirmPassword) {
+                    return false;
+                }
+                
+                if (!validateEmail(email)) {
+                    return false;
+                }
+                
+                return true;
+            } else if (step === 2) {
+                if (selectedUserType === 'driver') {
+                    const vehicleType = document.getElementById('driver-vehicle-type').value;
+                    const licensePlate = document.getElementById('driver-license-plate').value;
+                    const nationalId = document.getElementById('driver-national-id').value;
+                    const licenseNumber = document.getElementById('driver-license-number').value;
+                    const district = document.getElementById('driver-district').value;
+                    
+                    if (!vehicleType || !licensePlate || !nationalId || !licenseNumber || !district) {
+                        return false;
+                    }
+                } else if (selectedUserType === 'seller') {
+                    const businessName = document.getElementById('seller-business-name').value;
+                    const businessType = document.getElementById('seller-business-type').value;
+                    const region = document.getElementById('seller-region').value;
+                    
+                    if (!businessName || !businessType || !region) {
+                        return false;
+                    }
+                } else if (selectedUserType === 'business') {
+                    const companyName = document.getElementById('business-company-name').value;
+                    const industry = document.getElementById('business-industry').value;
+                    
+                    if (!companyName || !industry) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            }
+            
+            return true;
+        }
+        
+        // Populate review information
+        function populateReviewInfo() {
+            const reviewInfo = document.getElementById('review-info');
+            let html = '';
+            
+            // Basic information
+            const firstName = document.getElementById('signup-firstname').value;
+            const lastName = document.getElementById('signup-lastname').value;
+            const email = document.getElementById('signup-email').value;
+            const phone = document.getElementById('signup-phone').value;
+            
+            html += `
+                <div class="border-b pb-2">
+                    <h4 class="font-semibold text-gray-800">Personal Information</h4>
+                    <p class="text-gray-600">Name: ${firstName} ${lastName}</p>
+                    <p class="text-gray-600">Email: ${email}</p>
+                    <p class="text-gray-600">Phone: +256 ${phone}</p>
+                </div>
+            `;
+            
+            // Role-specific information
+            if (selectedUserType === 'driver') {
+                const vehicleType = document.getElementById('driver-vehicle-type').value;
+                const vehicleModel = document.getElementById('driver-vehicle-model').value;
+                const licensePlate = document.getElementById('driver-license-plate').value;
+                const nationalId = document.getElementById('driver-national-id').value;
+                const licenseNumber = document.getElementById('driver-license-number').value;
+                const district = document.getElementById('driver-district').value;
+                const capacity = document.getElementById('driver-vehicle-capacity').value;
+                const experience = document.getElementById('driver-experience').value;
+                
+                html += `
+                    <div class="border-b pb-2">
+                        <h4 class="font-semibold text-gray-800">Driver Information</h4>
+                        <p class="text-gray-600">Vehicle Type: ${vehicleType}</p>
+                        <p class="text-gray-600">Vehicle Model: ${vehicleModel}</p>
+                        <p class="text-gray-600">License Plate: ${licensePlate}</p>
+                        <p class="text-gray-600">National ID: ${nationalId}</p>
+                        <p class="text-gray-600">Driver's License: ${licenseNumber}</p>
+                        <p class="text-gray-600">Operating District: ${district}</p>
+                        <p class="text-gray-600">Vehicle Capacity: ${capacity} kg</p>
+                        <p class="text-gray-600">Experience: ${experience} years</p>
+                    </div>
+                    <div class="bg-yellow-50 p-3 rounded-lg">
+                        <p class="text-yellow-700 text-sm">Your driver application will be reviewed by our admin team. You'll receive a notification once your account is approved.</p>
+                    </div>
+                `;
+            } else if (selectedUserType === 'seller') {
+                const businessName = document.getElementById('seller-business-name').value;
+                const businessType = document.getElementById('seller-business-type').value;
+                const registrationNumber = document.getElementById('seller-registration-number').value;
+                const region = document.getElementById('seller-region').value;
+                const market = document.getElementById('seller-market').value;
+                const products = document.getElementById('seller-products').value;
+                const volume = document.getElementById('seller-delivery-volume').value;
+                
+                html += `
+                    <div class="border-b pb-2">
+                        <h4 class="font-semibold text-gray-800">Business Information</h4>
+                        <p class="text-gray-600">Business Name: ${businessName}</p>
+                        <p class="text-gray-600">Business Type: ${businessType}</p>
+                        <p class="text-gray-600">Registration Number: ${registrationNumber || 'Not provided'}</p>
+                        <p class="text-gray-600">Region: ${region}</p>
+                        <p class="text-gray-600">Market: ${market}</p>
+                        <p class="text-gray-600">Products: ${products}</p>
+                        <p class="text-gray-600">Delivery Volume: ${volume}</p>
+                    </div>
+                `;
+            } else if (selectedUserType === 'business') {
+                const companyName = document.getElementById('business-company-name').value;
+                const industry = document.getElementById('business-industry').value;
+                const registrationNumber = document.getElementById('business-registration-number').value;
+                const employees = document.getElementById('business-employees').value;
+                const shipments = document.getElementById('business-shipments').value;
+                
+                html += `
+                    <div class="border-b pb-2">
+                        <h4 class="font-semibold text-gray-800">Business Details</h4>
+                        <p class="text-gray-600">Company Name: ${companyName}</p>
+                        <p class="text-gray-600">Industry: ${industry}</p>
+                        <p class="text-gray-600">Registration Number: ${registrationNumber || 'Not provided'}</p>
+                        <p class="text-gray-600">Employees: ${employees}</p>
+                        <p class="text-gray-600">Monthly Shipments: ${shipments}</p>
+                    </div>
+                `;
+            }
+            
+            reviewInfo.innerHTML = html;
+        }
+        
+        // Handle login
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            
+            if (!email || !password) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+            
+            setLoading('login', true);
+            
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                // Get user data from Firestore
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    showToast('Login successful!');
+                    
+                    // Check if user is admin
+                    const isAdmin = await window.firestoreUtils.isUserAdmin(user.uid);
+                    
+                    if (isAdmin) {
+                        // Redirect to admin dashboard
+                        window.location.href = 'admin-dashboard.html';
+                    } else {
+                        // Redirect based on user type
+                        redirectToDashboard(userData.userType, userData.status);
+                    }
+                } else {
+                    showToast('User data not found. Please contact support.', 'error');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showToast(getErrorMessage(error.code), 'error');
+            } finally {
+                setLoading('login', false);
+            }
+        }
+        
+        // Enhanced handleSignup function with auto-setup
+        async function handleSignup() {
+            // Check if terms are accepted
+            if (!document.getElementById('terms').checked) {
+                showToast('Please accept the Terms of Service and Privacy Policy.', 'error');
+                return;
+            }
+            
+            if (selectedUserType === 'driver' && !document.getElementById('driver-agreement').checked) {
+                showToast('Please accept the driver agreement.', 'error');
+                return;
+            }
+            
+            if (selectedUserType === 'seller' && !document.getElementById('seller-agreement').checked) {
+                showToast('Please accept the seller agreement.', 'error');
+                return;
+            }
+            
+            const firstName = document.getElementById('signup-firstname').value.trim();
+            const lastName = document.getElementById('signup-lastname').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const phone = document.getElementById('signup-phone').value.trim();
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm').value;
+            
+            if (!firstName || !lastName || !email || !phone || !password || !confirmPassword) {
+                showToast('Please fill in all fields', 'error');
+                return;
+            }
+            
+            if (password !== confirmPassword) {
+                showToast('Passwords do not match', 'error');
+                return;
+            }
+            
+            if (password.length < 8) {
+                showToast('Password must be at least 8 characters', 'error');
+                return;
+            }
+            
+            setLoading('signup', true);
+            
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Update profile
+                await updateProfile(user, {
+                    displayName: `${firstName} ${lastName}`
+                });
+
+                // Prepare user data
+                const userData = {
+                    uid: user.uid,
+                    email: user.email,
+                    firstName: firstName,
+                    lastName: lastName,
+                    phone: `+256${phone}`,
+                    userType: selectedUserType,
+                    profileImage: '',
+                };
+
+                // Add role-specific data
+                if (selectedUserType === 'driver') {
+                    userData.driverInfo = {
+                        vehicleType: document.getElementById('driver-vehicle-type').value,
+                        vehicleModel: document.getElementById('driver-vehicle-model').value,
+                        licensePlate: document.getElementById('driver-license-plate').value,
+                        nationalId: document.getElementById('driver-national-id').value,
+                        licenseNumber: document.getElementById('driver-license-number').value,
+                        district: document.getElementById('driver-district').value,
+                        capacity: parseInt(document.getElementById('driver-vehicle-capacity').value),
+                        experience: parseInt(document.getElementById('driver-experience').value),
+                        approvalStatus: 'pending'
+                    };
+                }
+                
+                if (selectedUserType === 'seller') {
+                    userData.sellerInfo = {
+                        businessName: document.getElementById('seller-business-name').value,
+                        businessType: document.getElementById('seller-business-type').value,
+                        registrationNumber: document.getElementById('seller-registration-number').value,
+                        region: document.getElementById('seller-region').value,
+                        market: document.getElementById('seller-market').value,
+                        products: document.getElementById('seller-products').value,
+                        deliveryVolume: document.getElementById('seller-delivery-volume').value
+                    };
+                }
+                
+                if (selectedUserType === 'business') {
+                    userData.businessInfo = {
+                        companyName: document.getElementById('business-company-name').value,
+                        industry: document.getElementById('business-industry').value,
+                        registrationNumber: document.getElementById('business-registration-number').value,
+                        employees: document.getElementById('business-employees').value,
+                        shipments: parseInt(document.getElementById('business-shipments').value)
+                    };
+                }
+
+                // Use the enhanced user creation function
+                await createUserWithAutoSetup(userData);
+
+                showToast('Account created successfully!');
+                
+                // If driver, notify about admin approval
+                if (selectedUserType === 'driver') {
+                    showToast('Your driver application has been submitted for admin approval.', 'info');
+                }
+                
+                // Redirect based on user type and status
+                const status = selectedUserType === 'driver' ? 'pending' : 'active';
+                redirectToDashboard(selectedUserType, status);
+
+            } catch (error) {
+                console.error('Signup error:', error);
+                showToast(getErrorMessage(error.code), 'error');
+            } finally {
+                setLoading('signup', false);
+            }
+        }
+        
+        // Redirect to appropriate dashboard
+        function redirectToDashboard(userType, status) {
+            let redirectUrl = 'dashboards.html';
+            let delay = 1500;
+            
+            // Add user type and status as URL parameters
+            const params = new URLSearchParams({
+                userType: userType,
+                status: status
+            });
+            
+            redirectUrl += '?' + params.toString();
+            
+            setTimeout(() => {
+                window.location.href = redirectUrl;
+            }, delay);
+        }
+        
+        // Social login handlers
+        async function handleGoogleLogin() {
+            try {
+                const provider = new GoogleAuthProvider();
+                const result = await signInWithPopup(auth, provider);
+                
+                // Check if user document exists
+                const userRef = doc(db, "users", result.user.uid);
+                const userDoc = await getDoc(userRef);
+                
+                if (!userDoc.exists()) {
+                    // Create new user document automatically
+                    await createUserWithAutoSetup({
+                        uid: result.user.uid,
+                        email: result.user.email,
+                        firstName: result.user.displayName?.split(' ')[0] || '',
+                        lastName: result.user.displayName?.split(' ')[1] || '',
+                        profileImage: result.user.photoURL || '',
+                        userType: 'customer',
+                        phone: ''
+                    });
+                    
+                    showToast('Account created successfully!');
+                    redirectToDashboard('customer', 'active');
+                } else {
+                    const userData = userDoc.data();
+                    showToast('Signed in with Google successfully!');
+                    
+                    // Check if user is admin
+                    const isAdmin = await window.firestoreUtils.isUserAdmin(result.user.uid);
+                    
+                    if (isAdmin) {
+                        window.location.href = 'admin-dashboard.html';
+                    } else {
+                        redirectToDashboard(userData.userType, userData.status);
+                    }
+                }
+            } catch (error) {
+                console.error('Google login error:', error);
+                showToast(getErrorMessage(error.code), 'error');
+            }
+        }
+        
+        async function handleFacebookLogin() {
+            try {
+                const provider = new FacebookAuthProvider();
+                const result = await signInWithPopup(auth, provider);
+                
+                // Similar logic as Google login
+                const userRef = doc(db, "users", result.user.uid);
+                const userDoc = await getDoc(userRef);
+                
+                if (!userDoc.exists()) {
+                    await createUserWithAutoSetup({
+                        uid: result.user.uid,
+                        email: result.user.email,
+                        firstName: result.user.displayName?.split(' ')[0] || '',
+                        lastName: result.user.displayName?.split(' ')[1] || '',
+                        profileImage: result.user.photoURL || '',
+                        userType: 'customer',
+                        phone: ''
+                    });
+                    
+                    showToast('Account created successfully!');
+                    redirectToDashboard('customer', 'active');
+                } else {
+                    const userData = userDoc.data();
+                    showToast('Signed in with Facebook successfully!');
+                    
+                    // Check if user is admin
+                    const isAdmin = await window.firestoreUtils.isUserAdmin(result.user.uid);
+                    
+                    if (isAdmin) {
+                        window.location.href = 'admin-dashboard.html';
+                    } else {
+                        redirectToDashboard(userData.userType, userData.status);
+                    }
+                }
+            } catch (error) {
+                console.error('Facebook login error:', error);
+                showToast(getErrorMessage(error.code), 'error');
+            }
+        }
+        
+        function handlePhoneLogin() {
+            // Show phone verification modal
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('signup-form').classList.add('hidden');
+            document.getElementById('phone-verify-modal').classList.remove('hidden');
+            
+            // Initialize reCAPTCHA
+            if (!recaptchaVerifier) {
+                recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+                    'size': 'normal',
+                    'callback': (response) => {
+                        console.log('reCAPTCHA solved');
+                    },
+                    'expired-callback': () => {
+                        showToast('reCAPTCHA expired. Please try again.', 'error');
+                    }
+                });
+                recaptchaVerifier.render();
+            }
+        }
+        
+        async function sendVerificationCode() {
+            const phoneNumber = '+256' + document.getElementById('phone-number').value.trim();
+            
+            if (!phoneNumber || phoneNumber.length < 13) {
+                showToast('Please enter a valid phone number', 'error');
+                return;
+            }
+            
+            try {
+                confirmationResult = await signInWithPhoneNumber(
+                    auth, 
+                    phoneNumber, 
+                    recaptchaVerifier
+                );
+                
+                document.getElementById('phone-verify-modal').classList.add('hidden');
+                document.getElementById('otp-verify-modal').classList.remove('hidden');
+                document.getElementById('phone-display').textContent = phoneNumber;
+                
+                showToast('Verification code sent!');
+            } catch (error) {
+                console.error('SMS send error:', error);
+                showToast(getErrorMessage(error.code), 'error');
+                recaptchaVerifier.render().then(function(widgetId) {
+                    grecaptcha.reset(widgetId);
+                });
+            }
+        }
+        
+        async function verifyOTP() {
+            const otpInputs = document.querySelectorAll('.otp-input');
+            const code = Array.from(otpInputs).map(input => input.value).join('');
+            
+            if (code.length !== 6) {
+                showToast('Please enter the 6-digit code', 'error');
+                return;
+            }
+            
+            try {
+                const result = await confirmationResult.confirm(code);
+                
+                // Check if user exists in Firestore
+                const userRef = doc(db, "users", result.user.uid);
+                const userDoc = await getDoc(userRef);
+                
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    showToast('Phone verified successfully!');
+                    
+                    // Check if user is admin
+                    const isAdmin = await window.firestoreUtils.isUserAdmin(result.user.uid);
+                    
+                    if (isAdmin) {
+                        window.location.href = 'admin-dashboard.html';
+                    } else {
+                        redirectToDashboard(userData.userType, userData.status);
+                    }
+                } else {
+                    // Create new user for phone sign-in automatically
+                    await createUserWithAutoSetup({
+                        uid: result.user.uid,
+                        phone: result.user.phoneNumber,
+                        userType: 'customer',
+                        email: '',
+                        firstName: 'User',
+                        lastName: '',
+                        profileImage: ''
+                    });
+                    
+                    showToast('Account created successfully!');
+                    redirectToDashboard('customer', 'active');
+                }
+            } catch (error) {
+                console.error('OTP verification error:', error);
+                showToast('Invalid code. Please try again.', 'error');
+            }
+        }
+        
+        function resendCode() {
+            document.getElementById('otp-verify-modal').classList.add('hidden');
+            document.getElementById('phone-verify-modal').classList.remove('hidden');
+            showToast('You can request a new code now');
+        }
+        
+        function closePhoneModal() {
+            document.getElementById('phone-verify-modal').classList.add('hidden');
+            switchTab('login');
+        }
+        
+        // Utility functions
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = event.currentTarget.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+        
+        function checkPasswordStrength() {
+            const password = document.getElementById('signup-password').value;
+            const strengthBar = document.getElementById('strength-fill');
+            const strengthText = document.getElementById('strength-text');
+            
+            let strength = 0;
+            let color = 'bg-red-500';
+            let text = 'Weak';
+            
+            if (password.length >= 8) strength++;
+            if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+            if (password.match(/\d/)) strength++;
+            if (password.match(/[^a-zA-Z\d]/)) strength++;
+            
+            if (strength === 1) {
+                color = 'bg-red-500';
+                text = 'Weak';
+            } else if (strength === 2) {
+                color = 'bg-yellow-500';
+                text = 'Fair';
+            } else if (strength === 3) {
+                color = 'bg-blue-500';
+                text = 'Good';
+            } else if (strength === 4) {
+                color = 'bg-green-500';
+                text = 'Strong';
+            }
+            
+            strengthBar.className = `h-full transition-all ${color}`;
+            strengthBar.style.width = `${strength * 25}%`;
+            strengthText.textContent = text;
+        }
+        
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+        
+        function setupOTPInputs() {
+            const otpInputs = document.querySelectorAll('.otp-input');
+            
+            otpInputs.forEach((input, index) => {
+                input.addEventListener('input', (e) => {
+                    if (e.target.value.length === 1 && index < otpInputs.length - 1) {
+                        otpInputs[index + 1].focus();
+                    }
+                });
+                
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Backspace' && index > 0 && e.target.value === '') {
+                        otpInputs[index - 1].focus();
+                    }
+                });
+            });
+        }
+        
+        function setLoading(type, loading) {
+            const btn = document.getElementById(`${type}-btn`);
+            const text = document.getElementById(`${type}-btn-text`);
+            const spinner = document.getElementById(`${type}-spinner`);
+            
+            btn.disabled = loading;
+            btn.classList.toggle('opacity-50', loading);
+            spinner.classList.toggle('hidden', !loading);
+            text.textContent = loading ? 'Please wait...' : (type === 'login' ? 'Sign In' : 'Create Account');
+        }
+        
+        function showToast(message, type = 'info') {
+            const toastContainer = document.getElementById('toast-container');
+            const toastId = 'toast-' + Date.now();
+            
+            let bgColor = 'bg-blue-500';
+            let icon = 'fas fa-info-circle';
+            
+            if (type === 'success') {
+                bgColor = 'bg-green-500';
+                icon = 'fas fa-check-circle';
+            } else if (type === 'error') {
+                bgColor = 'bg-red-500';
+                icon = 'fas fa-exclamation-circle';
+            } else if (type === 'warning') {
+                bgColor = 'bg-yellow-500';
+                icon = 'fas fa-exclamation-triangle';
+            }
+            
+            const toast = document.createElement('div');
+            toast.id = toastId;
+            toast.className = `toast ${bgColor} text-white px-6 py-4 rounded-lg shadow-lg flex items-center space-x-3`;
+            toast.innerHTML = `
+                <i class="${icon} text-2xl"></i>
+                <span>${message}</span>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (document.getElementById(toastId)) {
+                    toast.style.animation = 'slideIn 0.3s ease-out reverse';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 5000);
+        }
+        
+        function getErrorMessage(code) {
+            const errorMessages = {
+                'auth/email-already-in-use': 'This email is already registered',
+                'auth/invalid-email': 'Invalid email address',
+                'auth/operation-not-allowed': 'This operation is not allowed',
+                'auth/weak-password': 'Password is too weak',
+                'auth/user-disabled': 'This account has been disabled',
+                'auth/user-not-found': 'No account found with this email',
+                'auth/wrong-password': 'Incorrect password',
+                'auth/too-many-requests': 'Too many attempts. Please try again later',
+                'auth/network-request-failed': 'Network error. Please check your connection',
+                'auth/popup-closed-by-user': 'Sign-in popup was closed',
+                'auth/cancelled-popup-request': 'Only one popup request is allowed at a time',
+                'auth/popup-blocked': 'Popup was blocked by the browser',
+                'auth/invalid-phone-number': 'Invalid phone number format',
+                'auth/invalid-verification-code': 'Invalid verification code',
+                'auth/code-expired': 'Verification code has expired'
+            };
+            
+            return errorMessages[code] || 'An error occurred. Please try again.';
+        }
+    </script>
+</body>
+</html>

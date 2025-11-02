@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FikaConnect - Smart Logistics & Marketplace</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4f46e5',
+                        'primary-dark': '#4338ca',
+                        secondary: '#7c3aed',
+                        accent: '#ec4899',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #4f46e5, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .delivery-option.selected {
+            border-color: #4f46e5;
+            background-color: rgba(79, 70, 229, 0.05);
+        }
+        
+        .floating-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .tab-active {
+            border-bottom: 3px solid #4f46e5;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        
+        .category-active {
+            background-color: #4f46e5;
+            color: white;
+        }
+        
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes slide-in-right {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        @keyframes slide-out-right {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        .animate-slide-in-right {
+            animation: slide-in-right 0.3s ease-out;
+        }
+        
+        .animate-slide-out-right {
+            animation: slide-out-right 0.3s ease-out;
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background-color: #e5e7eb;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: #10b981;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <!-- Header -->
+    <header class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-2 cursor-pointer" onclick="showServiceOptions()">
+                    <i class="fas fa-truck-fast text-2xl"></i>
+                    <span class="text-xl font-bold">FikaConnect</span>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <button id="user-menu-btn" class="hidden px-4 py-2 rounded-lg border border-white hover:bg-white hover:text-primary transition">
+                        <i class="fas fa-user mr-2"></i> Account
+                    </button>
+                    <button onclick="toggleAbout()" class="px-4 py-2 rounded-lg border border-white hover:bg-white hover:text-primary transition">
+                        About Us
+                    </button>
+                    <button id="auth-btn" class="px-4 py-2 rounded-lg bg-accent hover:bg-pink-600 transition">Sign Up</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Hero Section -->
+        <section class="gradient-bg text-white py-16 md:py-20">
+            <div class="container mx-auto px-4 text-center">
+                <h1 class="text-4xl md:text-5xl font-bold mb-6">Connect. Deliver. Grow.</h1>
+                <p class="text-xl max-w-2xl mx-auto">
+                    Uganda's smart logistics platform connecting rural communities with reliable transport and marketplace services.
+                </p>
+            </div>
+        </section>
+
+        <!-- Service Options -->
+        <section class="py-12 bg-white">
+            <div class="container mx-auto px-4">
+                <h2 class="text-3xl font-bold text-center mb-12 gradient-text">How can we help you today?</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Send/Receive Card -->
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover cursor-pointer border border-gray-100" onclick="showSection('send-receive')">
+                        <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center text-white text-2xl mb-4 mx-auto">
+                            <i class="fas fa-shipping-fast"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-center mb-2">Send/Receive</h3>
+                        <p class="text-gray-600 text-center">Book transport with transparent pricing</p>
+                    </div>
+                    
+                    <!-- Marketplace Card -->
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover cursor-pointer border border-gray-100" onclick="showSection('marketplace')">
+                        <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center text-white text-2xl mb-4 mx-auto">
+                            <i class="fas fa-store"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-center mb-2">Marketplace</h3>
+                        <p class="text-gray-600 text-center">Buy and sell goods locally</p>
+                    </div>
+                    
+                    <!-- Track Delivery Card -->
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover cursor-pointer border border-gray-100" onclick="showSection('tracking')">
+                        <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center text-white text-2xl mb-4 mx-auto">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-center mb-2">Track</h3>
+                        <p class="text-gray-600 text-center">Monitor deliveries in real-time</p>
+                    </div>
+                    
+                    <!-- Drivers Zone Card -->
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover cursor-pointer border border-gray-100" onclick="showSection('drivers')">
+                        <div class="w-16 h-16 gradient-bg rounded-full flex items-center justify-center text-white text-2xl mb-4 mx-auto">
+                            <i class="fas fa-id-card-alt"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-center mb-2">Drive</h3>
+                        <p class="text-gray-600 text-center">Earn income as a driver</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Send/Receive Section -->
+        <section id="send-receive" class="py-12 bg-gray-50 hidden">
+            <div class="container mx-auto px-4">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden max-w-4xl mx-auto">
+                    <div class="gradient-bg text-white p-6">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-2xl font-bold">Send Goods</h2>
+                            <button id="back-to-services" class="text-white hover:text-gray-200">
+                                <i class="fas fa-arrow-left mr-2"></i> Back
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <!-- Delivery Type Selection -->
+                        <div class="mb-8">
+                            <h3 class="text-lg font-semibold mb-4">Choose Delivery Type</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="delivery-option border-2 border-gray-200 rounded-lg p-4 cursor-pointer text-center" data-type="direct">
+                                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 text-lg mx-auto mb-2">
+                                        <i class="fas fa-truck"></i>
+                                    </div>
+                                    <h4 class="font-semibold text-sm">Direct</h4>
+                                    <p class="text-xs text-gray-500 mt-1">Door-to-door</p>
+                                </div>
+                                
+                                <div class="delivery-option border-2 border-gray-200 rounded-lg p-4 cursor-pointer text-center" data-type="urgent">
+                                    <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center text-red-600 text-lg mx-auto mb-2">
+                                        <i class="fas fa-bolt"></i>
+                                    </div>
+                                    <h4 class="font-semibold text-sm">Urgent</h4>
+                                    <p class="text-xs text-gray-500 mt-1">Priority service</p>
+                                </div>
+                                
+                                <div class="delivery-option border-2 border-gray-200 rounded-lg p-4 cursor-pointer text-center" data-type="store">
+                                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 text-lg mx-auto mb-2">
+                                        <i class="fas fa-store"></i>
+                                    </div>
+                                    <h4 class="font-semibold text-sm">Store Pickup</h4>
+                                    <p class="text-xs text-gray-500 mt-1">Partner locations</p>
+                                </div>
+                                
+                                <div class="delivery-option border-2 border-gray-200 rounded-lg p-4 cursor-pointer text-center" data-type="group">
+                                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-green-600 text-lg mx-auto mb-2">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <h4 class="font-semibold text-sm">Group</h4>
+                                    <p class="text-xs text-gray-500 mt-1">Shared transport</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sender & Receiver Details -->
+                        <div class="mb-8">
+                            <h3 class="text-lg font-semibold mb-4">Sender & Receiver Details</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-4">
+                                    <h4 class="font-medium text-gray-700">Sender Information</h4>
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Full Name</label>
+                                        <input type="text" id="sender-name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Your name">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Phone Number</label>
+                                        <div class="flex">
+                                            <div class="w-20 px-3 py-3 border border-gray-300 rounded-l-lg bg-gray-100 flex items-center justify-center font-medium">
+                                                +256
+                                            </div>
+                                            <input type="tel" id="sender-phone" class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="700 123 456">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Email (Optional)</label>
+                                        <input type="email" id="sender-email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="your@email.com">
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-4">
+                                    <h4 class="font-medium text-gray-700">Receiver Information</h4>
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Full Name</label>
+                                        <input type="text" id="receiver-name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Receiver's name">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Phone Number</label>
+                                        <div class="flex">
+                                            <div class="w-20 px-3 py-3 border border-gray-300 rounded-l-lg bg-gray-100 flex items-center justify-center font-medium">
+                                                +256
+                                            </div>
+                                            <input type="tel" id="receiver-phone" class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="700 123 456">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Email (Optional)</label>
+                                        <input type="email" id="receiver-email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="receiver@email.com">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Location Details -->
+                        <div class="mb-8">
+                            <h3 class="text-lg font-semibold mb-4">Location Details</h3>
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Pickup Location</label>
+                                        <input type="text" id="pickup-location" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Where from?">
+                                        <button id="current-location-pickup" class="mt-2 text-sm text-primary flex items-center">
+                                            <i class="fas fa-location-arrow mr-1"></i> Use Current Location
+                                        </button>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Delivery Location</label>
+                                        <input type="text" id="delivery-location" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Where to?">
+                                        <button id="current-location-delivery" class="mt-2 text-sm text-primary flex items-center">
+                                            <i class="fas fa-location-arrow mr-1"></i> Use Current Location
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Store Pickup Fields (Hidden by default) -->
+                                <div id="store-pickup-fields" class="delivery-type-field hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Pickup Point</label>
+                                        <select id="pickup-points" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <option value="">Select pickup point</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Drop-off Point</label>
+                                        <select id="dropoff-points" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <option value="">Select drop-off point</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Group Delivery Fields (Hidden by default) -->
+                                <div id="group-delivery-fields" class="delivery-type-field hidden">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-gray-700 mb-1">Pickup Zone</label>
+                                            <select id="pickup-zone" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                                <option value="">Select zone</option>
+                                                <option value="kampala">Kampala</option>
+                                                <option value="wakiso">Wakiso</option>
+                                                <option value="mukono">Mukono</option>
+                                                <option value="jinja">Jinja</option>
+                                                <option value="masaka">Masaka</option>
+                                                <option value="mbarara">Mbarara</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-gray-700 mb-1">Destination Zone</label>
+                                            <select id="destination-zone" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                                <option value="">Select zone</option>
+                                                <option value="kampala">Kampala</option>
+                                                <option value="wakiso">Wakiso</option>
+                                                <option value="mukono">Mukono</option>
+                                                <option value="jinja">Jinja</option>
+                                                <option value="masaka">Masaka</option>
+                                                <option value="mbarara">Mbarara</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-4">
+                                        <label class="block text-gray-700 mb-1">Delivery Time Window</label>
+                                        <select id="delivery-window" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <option value="">Select time window</option>
+                                            <option value="morning">Morning (8AM - 12PM)</option>
+                                            <option value="afternoon">Afternoon (12PM - 5PM)</option>
+                                            <option value="evening">Evening (5PM - 9PM)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                                    <div>
+                                        <p class="font-medium text-blue-800">Distance: <span id="distance-display">-- km</span></p>
+                                        <p class="text-sm text-blue-600">Estimated travel time: <span id="time-display">-- mins</span></p>
+                                    </div>
+                                    <button id="calculate-route" class="px-3 py-1 bg-blue-100 text-blue-700 rounded text-sm">
+                                        Calculate Route
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Package Details -->
+                        <div class="mb-8">
+                            <h3 class="text-lg font-semibold mb-4">Package Details</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-gray-700 mb-1">Package Type</label>
+                                    <select id="package-type" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <option value="">Select type</option>
+                                        <option value="document">Documents</option>
+                                        <option value="small">Small (under 5kg)</option>
+                                        <option value="medium">Medium (5-20kg)</option>
+                                        <option value="large">Large (20kg+)</option>
+                                        <option value="fragile">Fragile Items</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-gray-700 mb-1">Weight (kg)</label>
+                                    <input type="number" id="package-weight" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="0" min="0" step="0.1">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-gray-700 mb-1">Dimensions (cm)</label>
+                                    <div class="flex space-x-2">
+                                        <input type="number" id="package-length" class="w-1/3 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Length">
+                                        <input type="number" id="package-width" class="w-1/3 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Width">
+                                        <input type="number" id="package-height" class="w-1/3 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Height">
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-gray-700 mb-1">Vehicle Type</label>
+                                    <select id="vehicle-type" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                        <option value="">Select vehicle</option>
+                                        <option value="boda">Boda Boda</option>
+                                        <option value="pickup">Pickup Truck</option>
+                                        <option value="van">Van</option>
+                                        <option value="truck">Truck</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <label class="block text-gray-700 mb-1">Package Photos</label>
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                                    <i class="fas fa-camera text-gray-400 text-2xl mb-2"></i>
+                                    <p class="text-gray-500">Click to upload photos of your package</p>
+                                    <input type="file" id="package-photos" class="hidden" multiple accept="image/*">
+                                    <button id="select-photos" class="mt-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                                        Select Photos
+                                    </button>
+                                </div>
+                                <div id="photo-preview" class="mt-2 flex flex-wrap gap-2"></div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <label class="block text-gray-700 mb-1">Special Instructions</label>
+                                <textarea id="special-instructions" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" rows="2" placeholder="Any special handling instructions?"></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Pickup & Payment Details -->
+                        <div class="mb-8">
+                            <h3 class="text-lg font-semibold mb-4">Pickup & Payment</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Pickup Date</label>
+                                        <input type="date" id="pickup-date" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Preferred Delivery Time</label>
+                                        <select id="delivery-time" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <option value="">Select time</option>
+                                            <option value="morning">Morning (8AM - 12PM)</option>
+                                            <option value="afternoon">Afternoon (12PM - 5PM)</option>
+                                            <option value="evening">Evening (5PM - 9PM)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Package Value (UGX)</label>
+                                        <input type="number" id="package-value" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Estimated value">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Payment Method</label>
+                                        <div class="space-y-2">
+                                            <label class="flex items-center">
+                                                <input type="radio" name="payment-method" value="cash" class="mr-2" checked>
+                                                <span>Cash on Delivery</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="radio" name="payment-method" value="mobile-money" class="mr-2">
+                                                <span>Mobile Money</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input type="radio" name="payment-method" value="wallet" class="mr-2">
+                                                <span>FikaConnect Wallet</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Price & Booking -->
+                        <div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <p class="text-gray-600">Estimated Price:</p>
+                                    <p id="price-display" class="text-2xl font-bold text-primary">UGX 0</p>
+                                    <p class="text-sm text-gray-500">Breakdown: Base <span id="base-price">0</span> + Distance <span id="distance-price">0</span> + Weight <span id="weight-price">0</span></p>
+                                </div>
+                                <button id="book-now" class="px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition flex items-center">
+                                    <span id="book-now-text">Book Now</span>
+                                    <div id="book-now-spinner" class="loading-spinner ml-2 hidden"></div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Marketplace Section -->
+        <section id="marketplace" class="py-12 bg-gray-50 hidden">
+            <div class="container mx-auto px-4">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div class="gradient-bg text-white p-6">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-2xl font-bold">Marketplace</h2>
+                            <button id="back-to-services-marketplace" class="text-white hover:text-gray-200">
+                                <i class="fas fa-arrow-left mr-2"></i> Back
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <!-- Marketplace Tabs -->
+                        <div class="flex border-b border-gray-200 mb-6">
+                            <button id="tab-buy" class="tab-active px-4 py-2 font-medium" data-tab="buy">
+                                <i class="fas fa-shopping-cart mr-2"></i> Buy Products
+                            </button>
+                            <button id="tab-sell" class="px-4 py-2 font-medium text-gray-500" data-tab="sell">
+                                <i class="fas fa-store mr-2"></i> Sell Products
+                            </button>
+                            <button id="tab-account" class="px-4 py-2 font-medium text-gray-500" data-tab="account">
+                                <i class="fas fa-user mr-2"></i> My Account
+                            </button>
+                        </div>
+                        
+                        <!-- Buy Products Tab -->
+                        <div id="buy-tab" class="marketplace-tab">
+                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                                <div class="mb-4 md:mb-0">
+                                    <h3 class="text-xl font-semibold">Local Products</h3>
+                                    <p class="text-gray-600">From verified sellers in your area</p>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <input type="text" id="product-search" placeholder="Search products..." class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                    <button id="search-products" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Categories -->
+                            <div class="flex overflow-x-auto space-x-2 mb-6 pb-2">
+                                <button class="category-active px-4 py-2 bg-primary text-white rounded-full text-sm whitespace-nowrap" data-category="all">
+                                    All Products
+                                </button>
+                                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm whitespace-nowrap" data-category="food">
+                                    <i class="fas fa-utensils mr-1"></i> Food & Vegetables
+                                </button>
+                                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm whitespace-nowrap" data-category="social">
+                                    <i class="fas fa-hands-helping mr-1"></i> Social Enterprises
+                                </button>
+                                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm whitespace-nowrap" data-category="crafts">
+                                    <i class="fas fa-palette mr-1"></i> Crafts & Artisans
+                                </button>
+                                <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm whitespace-nowrap" data-category="construction">
+                                    <i class="fas fa-hammer mr-1"></i> Construction
+                                </button>
+                            </div>
+                            
+                            <!-- Products Grid -->
+                            <div id="products-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <!-- Product items will be dynamically loaded here -->
+                                <div class="text-center py-8">
+                                    <div class="loading-spinner mx-auto mb-4"></div>
+                                    <p class="text-gray-500">Loading products...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sell Products Tab -->
+                        <div id="sell-tab" class="marketplace-tab hidden">
+                            <div class="max-w-2xl mx-auto">
+                                <h3 class="text-xl font-semibold mb-6">List Your Product</h3>
+                                
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Product Name</label>
+                                        <input type="text" id="product-name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="What are you selling?">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Category</label>
+                                        <select id="product-category" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary">
+                                            <option value="">Select category</option>
+                                            <option value="food">Food & Vegetables</option>
+                                            <option value="social">Social Enterprise</option>
+                                            <option value="crafts">Crafts & Artisans</option>
+                                            <option value="construction">Construction Materials</option>
+                                            <option value="other">Other</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Description</label>
+                                        <textarea id="product-description" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" rows="3" placeholder="Describe your product..."></textarea>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-gray-700 mb-1">Price (UGX)</label>
+                                            <input type="number" id="product-price" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="0">
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-gray-700 mb-1">Quantity Available</label>
+                                            <input type="number" id="product-quantity" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="0">
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-gray-700 mb-1">Product Photos</label>
+                                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                                            <i class="fas fa-images text-gray-400 text-2xl mb-2"></i>
+                                            <p class="text-gray-500">Upload photos of your product</p>
+                                            <input type="file" id="product-photos" class="hidden" multiple accept="image/*">
+                                            <button id="select-product-photos" class="mt-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                                                Select Photos
+                                            </button>
+                                        </div>
+                                        <div id="product-photo-preview" class="mt-2 flex flex-wrap gap-2"></div>
+                                    </div>
+                                    
+                                    <div class="pt-4">
+                                        <button id="list-product" class="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition flex items-center justify-center">
+                                            <span id="list-product-text">List Product</span>
+                                            <div id="list-product-spinner" class="loading-spinner ml-2 hidden"></div>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Account Tab -->
+                        <div id="account-tab" class="marketplace-tab hidden">
+                            <div class="max-w-2xl mx-auto">
+                                <h3 class="text-xl font-semibold mb-6">Seller Account</h3>
+                                
+                                <div class="bg-gray-50 p-6 rounded-lg mb-6">
+                                    <div class="flex items-center mb-4">
+                                        <div class="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 mr-4">
+                                            <i class="fas fa-user text-xl"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold">Your Seller Profile</h4>
+                                            <p class="text-gray-600">Complete your profile to build trust with buyers</p>
+                                        </div>
+                                    </div>
+                                    <button id="complete-profile" class="w-full py-2 border border-primary text-primary rounded-lg hover:bg-primary hover:text-white transition">
+                                        Complete Profile
+                                    </button>
+                                </div>
+                                
+                                <div class="space-y-4">
+                                    <h4 class="font-semibold">My Listings</h4>
+                                    <div id="my-listings" class="bg-white border border-gray-200 rounded-lg p-4">
+                                        <div class="text-center py-4">
+                                            <div class="loading-spinner mx-auto mb-2"></div>
+                                            <p class="text-gray-600">Loading your listings...</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <h4 class="font-semibold mt-6">Messages</h4>
+                                    <div id="seller-messages" class="bg-white border border-gray-200 rounded-lg p-4">
+                                        <p class="text-gray-600 text-center">No messages yet</p>
+                                    </div>
+                                    
+                                    <h4 class="font-semibold mt-6">Sales & Earnings</h4>
+                                    <div class="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                                        <p id="total-earnings" class="text-2xl font-bold text-primary">UGX 0</p>
+                                        <p class="text-gray-600">Total earnings</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tracking Section -->
+        <section id="tracking" class="py-12 bg-gray-50 hidden">
+            <div class="container mx-auto px-4">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden max-w-2xl mx-auto">
+                    <div class="gradient-bg text-white p-6">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-2xl font-bold">Track Delivery</h2>
+                            <button id="back-to-services-tracking" class="text-white hover:text-gray-200">
+                                <i class="fas fa-arrow-left mr-2"></i> Back
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="mb-6">
+                            <label class="block text-gray-700 mb-2">Enter Delivery ID</label>
+                            <div class="flex">
+                                <input type="text" id="delivery-id" class="flex-grow px-4 py-3 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="e.g. FKC-123456">
+                                <button id="track-delivery" class="px-6 bg-primary text-white rounded-r-lg hover:bg-primary-dark transition">
+                                    Track
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="tracking-results" class="hidden">
+                            <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                                <div class="flex justify-between items-center mb-4">
+                                    <div class="flex flex-col items-center">
+                                        <div id="status-ordered" class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-white mb-2">
+                                            <i class="fas fa-shopping-cart text-sm"></i>
+                                        </div>
+                                        <span class="text-sm font-medium">Ordered</span>
+                                    </div>
+                                    
+                                    <div class="flex flex-col items-center">
+                                        <div id="status-picked" class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-white mb-2">
+                                            <i class="fas fa-box text-sm"></i>
+                                        </div>
+                                        <span class="text-sm font-medium">Picked Up</span>
+                                    </div>
+                                    
+                                    <div class="flex flex-col items-center">
+                                        <div id="status-route" class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-white mb-2">
+                                            <i class="fas fa-shipping-fast text-sm"></i>
+                                        </div>
+                                        <span class="text-sm font-medium">On Route</span>
+                                    </div>
+                                    
+                                    <div class="flex flex-col items-center">
+                                        <div id="status-delivered" class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-white mb-2">
+                                            <i class="fas fa-home text-sm"></i>
+                                        </div>
+                                        <span class="text-sm font-medium">Delivered</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="progress-bar mt-2">
+                                    <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+                                </div>
+                                
+                                <div class="text-center mt-4">
+                                    <p class="font-medium">Estimated delivery: <span id="estimated-delivery">--</span></p>
+                                </div>
+                            </div>
+                            
+                            <div class="h-40 bg-gray-200 rounded-lg flex items-center justify-center mb-6">
+                                <div class="text-center">
+                                    <i class="fas fa-map-marked-alt text-3xl text-gray-500 mb-2"></i>
+                                    <p class="text-gray-600">Live tracking map</p>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h3 id="driver-name" class="font-semibold mb-2">Driver: --</h3>
+                                <p id="driver-vehicle" class="text-gray-600 text-sm">Vehicle: --</p>
+                                <div class="flex space-x-3 mt-3">
+                                    <button id="call-driver" class="flex-1 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition text-sm">
+                                        Call Driver
+                                    </button>
+                                    <button id="message-driver" class="flex-1 py-2 border border-primary text-primary rounded-lg hover:bg-primary hover:text-white transition text-sm">
+                                        Message
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="tracking-login-prompt" class="hidden text-center py-8">
+                            <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center text-gray-500 text-2xl mx-auto mb-4">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <h3 class="text-xl font-semibold mb-2">View Your Deliveries</h3>
+                            <p class="text-gray-600 mb-4">Sign in to see all your active and past deliveries</p>
+                            <button onclick="window.location.href='authentication.html'" class="px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition">
+                                Sign In
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Drivers Section -->
+        <section id="drivers" class="py-12 bg-gray-50 hidden">
+            <div class="container mx-auto px-4">
+                <div class="bg-white rounded-xl shadow-lg overflow-hidden max-w-2xl mx-auto">
+                    <div class="gradient-bg text-white p-6">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-2xl font-bold">Drive With Us</h2>
+                            <button id="back-to-services-drivers" class="text-white hover:text-gray-200">
+                                <i class="fas fa-arrow-left mr-2"></i> Back
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <div class="text-center mb-8">
+                            <h3 class="text-xl font-semibold mb-2">Earn on your schedule</h3>
+                            <p class="text-gray-600">Join Uganda's fastest growing driver network</p>
+                        </div>
+                        
+                        <div class="space-y-6">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="font-semibold mb-2">Boda Boda Drivers</h4>
+                                <p class="text-gray-600 text-sm mb-3">Perfect for small packages and quick deliveries</p>
+                                <button onclick="window.location.href='authentication.html?role=driver&type=boda'" class="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
+                                    Apply Now
+                                </button>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="font-semibold mb-2">Truck & Van Drivers</h4>
+                                <p class="text-gray-600 text-sm mb-3">Ideal for larger deliveries and business logistics</p>
+                                <button onclick="window.location.href='authentication.html?role=driver&type=truck'" class="w-full py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
+                                    Apply Now
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- How It Works -->
+                        <div class="mt-8">
+                            <h3 class="text-lg font-semibold mb-4 text-center">How It Works</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="text-center">
+                                    <div class="w-12 h-12 gradient-bg rounded-full flex items-center justify-center text-white text-lg mx-auto mb-2">
+                                        <span class="font-bold">1</span>
+                                    </div>
+                                    <h4 class="font-semibold text-sm mb-1">Sign Up</h4>
+                                    <p class="text-xs text-gray-600">Complete your driver profile</p>
+                                </div>
+                                
+                                <div class="text-center">
+                                    <div class="w-12 h-12 gradient-bg rounded-full flex items-center justify-center text-white text-lg mx-auto mb-2">
+                                        <span class="font-bold">2</span>
+                                    </div>
+                                    <h4 class="font-semibold text-sm mb-1">Get Verified</h4>
+                                    <p class="text-xs text-gray-600">Submit required documents</p>
+                                </div>
+                                
+                                <div class="text-center">
+                                    <div class="w-12 h-12 gradient-bg rounded-full flex items-center justify-center text-white text-lg mx-auto mb-2">
+                                        <span class="font-bold">3</span>
+                                    </div>
+                                    <h4 class="font-semibold text-sm mb-1">Start Earning</h4>
+                                    <p class="text-xs text-gray-600">Accept delivery requests</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Driver Benefits -->
+                        <div class="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <div>
+                                <div class="w-12 h-12 gradient-bg rounded-full flex items-center justify-center text-white text-lg mx-auto mb-2">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                                <p class="text-sm font-medium">Earn More</p>
+                                <p class="text-xs text-gray-600">Competitive rates</p>
+                            </div>
+                            
+                            <div>
+                                <div class="w-12 h-12 gradient-bg rounded-full flex items-center justify-center text-white text-lg mx-auto mb-2">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <p class="text-sm font-medium">Insurance</p>
+                                <p class="text-xs text-gray-600">Delivery protection</p>
+                            </div>
+                            
+                            <div>
+                                <div class="w-12 h-12 gradient-bg rounded-full flex items-center justify-center text-white text-lg mx-auto mb-2">
+                                    <i class="fas fa-mobile-alt"></i>
+                                </div>
+                                <p class="text-sm font-medium">Easy App</p>
+                                <p class="text-xs text-gray-600">Simple to use</p>
+                            </div>
+                            
+                            <div>
+                                <div class="w-12 h-12 gradient-bg rounded-full flex items-center justify-center text-white text-lg mx-auto mb-2">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <p class="text-sm font-medium">Flexible Hours</p>
+                                <p class="text-xs text-gray-600">Work when you want</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Testimonials -->
+                        <div class="mt-8">
+                            <h3 class="text-lg font-semibold mb-4 text-center">What Our Drivers Say</h3>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <div class="flex items-start">
+                                    <div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-white mr-4 flex-shrink-0">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-700 italic">"FikaConnect has helped me earn a stable income. The app is easy to use and payments come on time."</p>
+                                        <p class="text-sm font-semibold mt-2">- Robert, Boda Driver</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Support -->
+                        <div class="mt-6 text-center">
+                            <p class="text-gray-600 mb-2">Questions about driving with us?</p>
+                            <button id="chat-with-support" class="px-4 py-2 border border-primary text-primary rounded-lg hover:bg-primary hover:text-white transition">
+                                <i class="fas fa-comments mr-2"></i> Chat with Fika Support
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Us Modal -->
+        <div id="about-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl shadow-lg max-w-md w-full mx-4">
+                <div class="gradient-bg text-white p-6 rounded-t-xl">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-bold">About FikaConnect</h2>
+                        <button id="close-about" class="text-white hover:text-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-700 mb-4">
+                        FikaConnect is Uganda's smart logistics platform connecting rural communities with reliable transport and marketplace services.
+                    </p>
+                    <p class="text-gray-700">
+                        We bridge the logistics gap by connecting farmers, small businesses, and individuals with verified drivers for transparent, affordable deliveries.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback Modal -->
+        <div id="feedback-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-xl shadow-lg max-w-md w-full mx-4">
+                <div class="gradient-bg text-white p-6 rounded-t-xl">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-bold">Share Feedback</h2>
+                        <button id="close-feedback" class="text-white hover:text-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">How was your experience?</label>
+                        <div class="flex space-x-1 justify-center mb-4">
+                            <i class="far fa-star text-2xl text-gray-400 cursor-pointer hover:text-yellow-500" data-rating="1"></i>
+                            <i class="far fa-star text-2xl text-gray-400 cursor-pointer hover:text-yellow-500" data-rating="2"></i>
+                            <i class="far fa-star text-2xl text-gray-400 cursor-pointer hover:text-yellow-500" data-rating="3"></i>
+                            <i class="far fa-star text-2xl text-gray-400 cursor-pointer hover:text-yellow-500" data-rating="4"></i>
+                            <i class="far fa-star text-2xl text-gray-400 cursor-pointer hover:text-yellow-500" data-rating="5"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 mb-2">Your feedback</label>
+                        <textarea id="feedback-text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" rows="3" placeholder="What can we improve?"></textarea>
+                    </div>
+                    
+                    <button id="submit-feedback" class="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition">
+                        Submit Feedback
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Floating Feedback Button -->
+    <button id="floating-feedback" class="floating-btn w-14 h-14 gradient-bg text-white rounded-full flex items-center justify-center text-xl shadow-lg hover:shadow-xl transition">
+        <i class="fas fa-comment"></i>
+    </button>
+
+    <!-- Firebase and App Scripts -->
+    <script type="module" src="js/firebase-config.js"></script>
+    <script type="module" src="js/auth-manager.js"></script>
+    <script type="module" src="js/sendReceive.js"></script>
+    <script type="module" src="js/marketplace.js"></script>
+    <script type="module" src="js/tracking.js"></script>
+    <script type="module" src="js/drivers.js"></script>
+    <script type="module" src="js/utils.js"></script>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let selectedCategory = 'all';
+
+        // Show service options (main dashboard)
+        function showServiceOptions() {
+            document.querySelectorAll('section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            document.querySelector('.bg-white.py-12').classList.remove('hidden');
+        }
+        
+        // Show specific section
+        function showSection(sectionId) {
+            document.querySelectorAll('section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            document.getElementById(sectionId).classList.remove('hidden');
+            document.getElementById(sectionId).classList.add('fade-in');
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // Toggle About modal
+        function toggleAbout() {
+            const modal = document.getElementById('about-modal');
+            modal.classList.toggle('hidden');
+        }
+        
+        // Toggle Feedback modal
+        function toggleFeedback() {
+            const modal = document.getElementById('feedback-modal');
+            modal.classList.toggle('hidden');
+        }
+        
+        // Rating stars functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const stars = document.querySelectorAll('.fa-star');
+            stars.forEach(star => {
+                star.addEventListener('click', function() {
+                    const rating = this.getAttribute('data-rating');
+                    setRating(rating);
+                });
+            });
+        });
+        
+        function setRating(rating) {
+            const stars = document.querySelectorAll('.fa-star');
+            stars.forEach(star => {
+                const starRating = star.getAttribute('data-rating');
+                if (starRating <= rating) {
+                    star.classList.remove('far');
+                    star.classList.add('fas', 'text-yellow-500');
+                } else {
+                    star.classList.remove('fas', 'text-yellow-500');
+                    star.classList.add('far', 'text-gray-400');
+                }
+            });
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up back buttons
+            document.getElementById('back-to-services').addEventListener('click', showServiceOptions);
+            document.getElementById('back-to-services-marketplace').addEventListener('click', showServiceOptions);
+            document.getElementById('back-to-services-tracking').addEventListener('click', showServiceOptions);
+            document.getElementById('back-to-services-drivers').addEventListener('click', showServiceOptions);
+            
+            // Set up modal close buttons
+            document.getElementById('close-about').addEventListener('click', toggleAbout);
+            document.getElementById('close-feedback').addEventListener('click', toggleFeedback);
+            
+            // Set up floating feedback button
+            document.getElementById('floating-feedback').addEventListener('click', toggleFeedback);
+            
+            // Set up feedback submission
+            document.getElementById('submit-feedback').addEventListener('click', function() {
+                const rating = document.querySelector('.fa-star.fas')?.getAttribute('data-rating') || 0;
+                const feedback = document.getElementById('feedback-text').value;
+                
+                // In a real app, this would send to a backend
+                console.log('Feedback submitted:', { rating, feedback });
+                alert('Thank you for your feedback!');
+                toggleFeedback();
+            });
+            
+            // Set up chat with support
+            document.getElementById('chat-with-support').addEventListener('click', function() {
+                alert('This would open a chat with Fika support. In a real implementation, this would connect to a live chat system.');
+            });
+        });
+    </script>
+</body>
+</html>
