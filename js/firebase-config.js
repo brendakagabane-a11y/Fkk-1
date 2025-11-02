@@ -10,7 +10,8 @@ import {
     signInWithPhoneNumber,
     RecaptchaVerifier,
     updateProfile,
-    onAuthStateChanged
+    onAuthStateChanged,
+    signOut
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
 import { 
     getFirestore, 
@@ -19,14 +20,22 @@ import {
     doc, 
     setDoc,
     getDoc,
+    getDocs,
     serverTimestamp,
     query,
     where,
-    getDocs,
+    orderBy,
+    limit,
     updateDoc,
     onSnapshot
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-storage.js";
+import { 
+    getStorage, 
+    ref, 
+    uploadBytes, 
+    getDownloadURL,
+    deleteObject 
+} from "https://www.gstatic.com/firebasejs/9.22.1/firebase-storage.js";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -57,18 +66,22 @@ export {
     RecaptchaVerifier,
     updateProfile,
     onAuthStateChanged,
+    signOut,
     collection, 
     addDoc, 
     doc, 
     setDoc,
     getDoc,
+    getDocs,
     serverTimestamp,
     query,
     where,
-    getDocs,
+    orderBy,
+    limit,
     updateDoc,
     onSnapshot,
     ref, 
     uploadBytes, 
-    getDownloadURL
+    getDownloadURL,
+    deleteObject
 };
