@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FikaConnect - Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#4f46e5',
+                        'primary-dark': '#4338ca',
+                        secondary: '#7c3aed',
+                        accent: '#ec4899',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#ef4444',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #4f46e5, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar {
+            transition: all 0.3s ease;
+        }
+        
+        .progress-bar {
+            transition: width 0.5s ease-in-out;
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+        }
+        
+        .notification-dot {
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background-color: #ec4899;
+            border-radius: 50%;
+        }
+        
+        .menu-active {
+            background-color: rgba(79, 70, 229, 0.1);
+            border-right: 3px solid #4f46e5;
+            color: #4f46e5;
+        }
+        
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800">
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-app.js";
+        import { 
+            getAuth, 
+            onAuthStateChanged,
+            signOut,
+            reauthenticateWithPopup,
+            reauthenticateWithCredential,
+            GoogleAuthProvider,
+            EmailAuthProvider
+        } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            doc, 
+            getDoc,
+            getDocs,
+            query,
+            where,
+            orderBy,
+            limit,
+            updateDoc,
+            onSnapshot,
+            serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDSY0OUQOtY71QT1a4GnP-TNICJ8FNo35M",
+            authDomain: "sr-market-strategies.firebaseapp.com",
+            projectId: "sr-market-strategies",
+            storageBucket: "sr-market-strategies.firebasestorage.app",
+            messagingSenderId: "118475459994",
+            appId: "1:118475459994:web:e8ec9e157abb1ed3ec3e23",
+            measurementId: "G-HZ4E5L32XE"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        // Make Firebase available globally
+        window.auth = auth;
+        window.db = db;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.signOut = signOut;
+        window.reauthenticateWithPopup = reauthenticateWithPopup;
+        window.reauthenticateWithCredential = reauthenticateWithCredential;
+        window.GoogleAuthProvider = GoogleAuthProvider;
+        window.EmailAuthProvider = EmailAuthProvider;
+        window.getDoc = getDoc;
+        window.getDocs = getDocs;
+        window.collection = collection;
+        window.doc = doc;
+        window.query = query;
+        window.where = where;
+        window.orderBy = orderBy;
+        window.limit = limit;
+        window.updateDoc = updateDoc;
+        window.onSnapshot = onSnapshot;
+        window.serverTimestamp = serverTimestamp;
+    </script>
+
+    <!-- Dashboard Layout -->
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="sidebar w-64 bg-white shadow-lg">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 gradient-bg rounded-full flex items-center justify-center text-white">
+                        <i class="fas fa-truck-fast"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg">FikaConnect</h1>
+                        <p class="text-xs text-gray-500">Dashboard</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Profile -->
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-gray-600" id="user-profile-icon"></i>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-semibold" id="user-name">Loading...</h3>
+                        <p class="text-sm text-gray-500" id="user-type">Loading...</p>
+                    </div>
+                    <div class="relative">
+                        <button id="notifications-btn" class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center hover:bg-gray-200 transition">
+                            <i class="fas fa-bell text-gray-600"></i>
+                            <span class="notification-dot hidden" id="notification-dot"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Navigation Menu -->
+            <nav class="p-4">
+                <ul class="space-y-2">
+                    <li>
+                        <a href="#" class="menu-active flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition">
+                            <i class="fas fa-home w-5 text-center"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition">
+                            <i class="fas fa-shipping-fast w-5 text-center"></i>
+                            <span>My Deliveries</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition">
+                            <i class="fas fa-store w-5 text-center"></i>
+                            <span>Marketplace</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition">
+                            <i class="fas fa-wallet w-5 text-center"></i>
+                            <span>Wallet & Payments</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition">
+                            <i class="fas fa-cog w-5 text-center"></i>
+                            <span>Settings</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition">
+                            <i class="fas fa-question-circle w-5 text-center"></i>
+                            <span>Help & Support</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            
+            <!-- Quick Actions -->
+            <div class="p-4 border-t border-gray-200">
+                <h4 class="font-semibold text-sm text-gray-500 mb-3">QUICK ACTIONS</h4>
+                <div class="space-y-2">
+                    <button onclick="newDelivery()" class="w-full text-left flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition text-sm">
+                        <i class="fas fa-plus text-primary w-4 text-center"></i>
+                        <span>New Delivery</span>
+                    </button>
+                    <button onclick="trackDelivery()" class="w-full text-left flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition text-sm">
+                        <i class="fas fa-search text-primary w-4 text-center"></i>
+                        <span>Track Package</span>
+                    </button>
+                    <button onclick="browseMarketplace()" class="w-full text-left flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition text-sm">
+                        <i class="fas fa-store text-primary w-4 text-center"></i>
+                        <span>Browse Products</span>
+                    </button>
+                    <button onclick="handleLogout()" class="w-full text-left flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50 transition text-sm text-red-600">
+                        <i class="fas fa-sign-out-alt w-4 text-center"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="flex-1 overflow-auto">
+            <!-- Header -->
+            <header class="bg-white shadow-sm border-b border-gray-200">
+                <div class="flex justify-between items-center p-4">
+                    <div>
+                        <h1 class="text-2xl font-bold gradient-text" id="dashboard-title">Loading Dashboard...</h1>
+                        <p class="text-gray-600" id="dashboard-subtitle">Loading your data...</p>
+                    </div>
+                    
+                    <div class="flex items-center space-x-4">
+                        <!-- User Type Switch -->
+                        <div class="relative">
+                            <select id="user-type-switch" class="appearance-none bg-white border border-gray-300 rounded-lg px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-primary">
+                                <option value="customer">Customer View</option>
+                                <option value="seller">Seller View</option>
+                                <option value="driver">Driver View</option>
+                                <option value="business">Business View</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        </div>
+                        
+                        <button class="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
+                            <i class="fas fa-search text-gray-600"></i>
+                        </button>
+                        
+                        <button class="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
+                            <i class="fas fa-bell text-gray-600"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Dashboard Content -->
+            <main class="p-6">
+                <!-- Customer Dashboard -->
+                <div id="customer-dashboard" class="dashboard-view">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="stats-card rounded-xl p-6 card-hover">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-blue-100">Total Deliveries</p>
+                                    <h3 class="text-2xl font-bold mt-2" id="total-deliveries">0</h3>
+                                    <p class="text-blue-100 text-sm mt-1" id="deliveries-trend">Loading...</p>
+                                </div>
+                                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-box text-white"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-card rounded-xl p-6 card-hover">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-blue-100">Active Deliveries</p>
+                                    <h3 class="text-2xl font-bold mt-2" id="active-deliveries">0</h3>
+                                    <p class="text-blue-100 text-sm mt-1" id="active-status">Loading...</p>
+                                </div>
+                                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-shipping-fast text-white"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-card rounded-xl p-6 card-hover">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-blue-100">Money Saved</p>
+                                    <h3 class="text-2xl font-bold mt-2" id="money-saved">UGX 0</h3>
+                                    <p class="text-blue-100 text-sm mt-1">With group deliveries</p>
+                                </div>
+                                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-piggy-bank text-white"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stats-card rounded-xl p-6 card-hover">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-blue-100">Wallet Balance</p>
+                                    <h3 class="text-2xl font-bold mt-2" id="wallet-balance">UGX 0</h3>
+                                    <p class="text-blue-100 text-sm mt-1" id="wallet-trend">Loading...</p>
+                                </div>
+                                <div class="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-wallet text-white"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions & Active Deliveries -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                        <!-- Quick Actions -->
+                        <div class="lg:col-span-1">
+                            <div class="bg-white rounded-xl shadow-lg p-6">
+                                <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
+                                <div class="space-y-3">
+                                    <button onclick="newDelivery()" class="w-full flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-blue-50 transition">
+                                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                                            <i class="fas fa-plus"></i>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="font-medium">New Delivery</p>
+                                            <p class="text-sm text-gray-500">Send a package</p>
+                                        </div>
+                                    </button>
+                                    
+                                    <button onclick="browseMarketplace()" class="w-full flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-blue-50 transition">
+                                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-green-600">
+                                            <i class="fas fa-store"></i>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="font-medium">Browse Marketplace</p>
+                                            <p class="text-sm text-gray-500">Shop local products</p>
+                                        </div>
+                                    </button>
+                                    
+                                    <button onclick="trackDelivery()" class="w-full flex items-center space-x-3 p-4 border border-gray-200 rounded-lg hover:border-primary hover:bg-blue-50 transition">
+                                        <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                        </div>
+                                        <div class="text-left">
+                                            <p class="font-medium">Track Delivery</p>
+                                            <p class="text-sm text-gray-500">Monitor your packages</p>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Active Deliveries -->
+                        <div class="lg:col-span-2">
+                            <div class="bg-white rounded-xl shadow-lg p-6">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="text-lg font-semibold">Active Deliveries</h3>
+                                    <button class="text-primary hover:underline text-sm">View All</button>
+                                </div>
+                                
+                                <div id="active-deliveries-list" class="space-y-4">
+                                    <!-- Active deliveries will be loaded here -->
+                                    <div class="text-center py-8 text-gray-500">
+                                        <i class="fas fa-box-open text-4xl mb-2"></i>
+                                        <p>No active deliveries</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Activity & Marketplace -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Recent Activity -->
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4">Recent Activity</h3>
+                            <div id="recent-activity" class="space-y-4">
+                                <!-- Recent activity will be loaded here -->
+                                <div class="text-center py-4 text-gray-500">
+                                    <p>No recent activity</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Marketplace Recommendations -->
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold">Recommended for You</h3>
+                                <button class="text-primary hover:underline text-sm">See All</button>
+                            </div>
+                            
+                            <div id="marketplace-recommendations" class="grid grid-cols-2 gap-4">
+                                <!-- Recommendations will be loaded here -->
+                                <div class="text-center py-4 text-gray-500 col-span-2">
+                                    <p>Loading recommendations...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Seller Dashboard -->
+                <div id="seller-dashboard" class="dashboard-view hidden">
+                    <!-- Seller-specific content would go here -->
+                    <div class="text-center py-12">
+                        <div class="w-24 h-24 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 text-2xl mx-auto mb-4">
+                            <i class="fas fa-store"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Seller Dashboard</h3>
+                        <p class="text-gray-600 mb-6">Manage your products, orders, and business analytics</p>
+                        <button class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
+                            Set Up Your Store
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Driver Dashboard -->
+                <div id="driver-dashboard" class="dashboard-view hidden">
+                    <!-- Driver-specific content would go here -->
+                    <div class="text-center py-12">
+                        <div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center text-green-600 text-2xl mx-auto mb-4">
+                            <i class="fas fa-truck"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Driver Dashboard</h3>
+                        <p class="text-gray-600 mb-6">Manage your deliveries, earnings, and schedule</p>
+                        <button class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
+                            Go Online
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Business Dashboard -->
+                <div id="business-dashboard" class="dashboard-view hidden">
+                    <!-- Business-specific content would go here -->
+                    <div class="text-center py-12">
+                        <div class="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 text-2xl mx-auto mb-4">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Business Dashboard</h3>
+                        <p class="text-gray-600 mb-6">Manage corporate accounts, bulk deliveries, and analytics</p>
+                        <button class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
+                            Set Up Business Account
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Driver Pending Approval View -->
+                <div id="driver-pending-view" class="dashboard-view hidden">
+                    <div class="text-center py-12">
+                        <div class="w-24 h-24 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 text-2xl mx-auto mb-4">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Application Under Review</h3>
+                        <p class="text-gray-600 mb-4 max-w-md mx-auto">
+                            Your driver application is currently being reviewed by our admin team. 
+                            This process usually takes 24-48 hours. You'll receive a notification 
+                            once your application is approved.
+                        </p>
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md mx-auto mb-6">
+                            <p class="text-sm text-yellow-700">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                You can still use FikaConnect as a customer while waiting for approval.
+                            </p>
+                        </div>
+                        <button onclick="switchDashboard('customer')" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
+                            Continue as Customer
+                        </button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Current user state
+        let currentUser = {
+            uid: null,
+            name: "Loading...",
+            type: "customer",
+            email: "",
+            phone: "",
+            status: "active",
+            userData: null
+        };
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+        });
+
+        // Initialize dashboard with Firebase auth
+        async function initializeDashboard() {
+            try {
+                // Check if user is authenticated
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        currentUser.uid = user.uid;
+                        currentUser.email = user.email;
+                        
+                        // Get user data from Firestore
+                        await loadUserData(user.uid);
+                        
+                        // Get user type from URL parameters or user data
+                        const urlParams = new URLSearchParams(window.location.search);
+                        const userType = urlParams.get('userType') || currentUser.type;
+                        const status = urlParams.get('status') || currentUser.status;
+                        
+                        currentUser.type = userType;
+                        currentUser.status = status;
+                        
+                        // Set up user type switch
+                        const userTypeSwitch = document.getElementById('user-type-switch');
+                        userTypeSwitch.value = userType;
+                        
+                        userTypeSwitch.addEventListener('change', function() {
+                            handleUserTypeSwitch(this.value);
+                        });
+                        
+                        // Initialize with appropriate dashboard
+                        initializeUserDashboard(userType, status);
+                        
+                        // Load dashboard data
+                        await loadDashboardData();
+                        
+                    } else {
+                        // User not authenticated, redirect to login
+                        window.location.href = 'authentication.html';
+                    }
+                });
+                
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                showNotification('Error loading dashboard', 'error');
+            }
+        }
+
+        // Enhanced user type switching with authentication
+        async function handleUserTypeSwitch(newUserType) {
+            try {
+                // If switching to the same type, no need for authentication
+                if (newUserType === currentUser.type) {
+                    switchDashboard(newUserType);
+                    return;
+                }
+
+                // Check if user is allowed to switch to this user type
+                if (!canSwitchToUserType(newUserType)) {
+                    document.getElementById('user-type-switch').value = currentUser.type;
+                    return;
+                }
+
+                // Show authentication modal for user type change
+                const authenticated = await showReauthenticationModal(
+                    `Please verify your identity to switch to ${newUserType} mode`
+                );
+
+                if (authenticated) {
+                    // Update user type in Firestore
+                    await updateUserType(newUserType);
+                    switchDashboard(newUserType);
+                    showNotification(`Switched to ${newUserType} mode successfully`, 'success');
+                } else {
+                    // Reset the dropdown to previous value
+                    document.getElementById('user-type-switch').value = currentUser.type;
+                    showNotification('Authentication failed. User type not changed.', 'error');
+                }
+            } catch (error) {
+                console.error('Error switching user type:', error);
+                document.getElementById('user-type-switch').value = currentUser.type;
+                showNotification('Error switching user type', 'error');
+            }
+        }
+
+        // Check if user is allowed to switch to this user type
+        function canSwitchToUserType(newUserType) {
+            const user = currentUser.userData;
+            
+            // Drivers need admin approval
+            if (newUserType === 'driver') {
+                if (user.driverInfo?.approvalStatus !== 'approved') {
+                    showNotification('Driver account requires admin approval. Please complete driver registration first.', 'error');
+                    return false;
+                }
+            }
+            
+            // Sellers need completed profile
+            if (newUserType === 'seller') {
+                if (!user.sellerInfo?.businessName) {
+                    showNotification('Please complete seller profile setup first.', 'error');
+                    return false;
+                }
+            }
+            
+            // Business accounts need completed profile
+            if (newUserType === 'business') {
+                if (!user.businessInfo?.companyName) {
+                    showNotification('Please complete business profile setup first.', 'error');
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        // Reauthentication modal
+        async function showReauthenticationModal(message) {
+            return new Promise((resolve) => {
+                // Create modal
+                const modal = document.createElement('div');
+                modal.className = 'modal-overlay';
+                modal.innerHTML = `
+                    <div class="modal-content">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-shield-alt text-primary text-4xl mb-3"></i>
+                            <h3 class="text-xl font-bold text-gray-800">Security Verification</h3>
+                            <p class="text-gray-600 mt-2">${message}</p>
+                        </div>
+                        
+                        <div class="space-y-3">
+                            <button onclick="handleGoogleReauth(this.parentElement.parentElement.parentElement, true)" 
+                                    class="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                <i class="fab fa-google text-red-500"></i>
+                                <span>Verify with Google</span>
+                            </button>
+                            
+                            <button onclick="handleEmailReauth(this.parentElement.parentElement.parentElement)" 
+                                    class="w-full flex items-center justify-center space-x-3 p-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                <i class="fas fa-envelope text-primary"></i>
+                                <span>Verify with Email & Password</span>
+                            </button>
+                            
+                            <button onclick="closeReauthModal(this.parentElement.parentElement.parentElement, false)" 
+                                    class="w-full p-3 text-gray-600 hover:text-gray-800 transition">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                
+                // Store resolve function globally to call from button handlers
+                window.reauthResolve = resolve;
+            });
+        }
+
+        // Google reauthentication
+        async function handleGoogleReauth(modal, success) {
+            try {
+                const provider = new GoogleAuthProvider();
+                await reauthenticateWithPopup(auth.currentUser, provider);
+                closeReauthModal(modal, true);
+            } catch (error) {
+                console.error('Google reauthentication failed:', error);
+                closeReauthModal(modal, false);
+            }
+        }
+
+        // Email reauthentication
+        async function handleEmailReauth(modal) {
+            // Create password input modal
+            const passwordModal = document.createElement('div');
+            passwordModal.className = 'modal-overlay';
+            passwordModal.innerHTML = `
+                <div class="modal-content">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-lock text-primary text-4xl mb-3"></i>
+                        <h3 class="text-xl font-bold text-gray-800">Enter Password</h3>
+                        <p class="text-gray-600 mt-2">Please enter your password to verify your identity</p>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-gray-700 mb-2 font-medium">Password</label>
+                            <div class="relative">
+                                <i class="fas fa-lock absolute left-3 top-4 text-gray-400"></i>
+                                <input type="password" id="reauth-password" class="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Enter your password">
+                                <button type="button" onclick="toggleReauthPasswordVisibility()" class="absolute right-3 top-4 text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button onclick="closePasswordModal(this.parentElement.parentElement.parentElement)" 
+                                    class="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                                Cancel
+                            </button>
+                            <button onclick="verifyPassword(this.parentElement.parentElement.parentElement, '${modal.id}')" 
+                                    class="flex-1 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
+                                Verify
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Add IDs for reference
+            modal.id = 'main-reauth-modal';
+            passwordModal.id = 'password-reauth-modal';
+            
+            document.body.appendChild(passwordModal);
+        }
+
+        // Toggle password visibility for reauthentication
+        function toggleReauthPasswordVisibility() {
+            const input = document.getElementById('reauth-password');
+            const icon = event.currentTarget.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Verify password for reauthentication
+        async function verifyPassword(passwordModal, mainModalId) {
+            const password = document.getElementById('reauth-password').value;
+            
+            if (!password) {
+                showNotification('Please enter your password', 'error');
+                return;
+            }
+
+            try {
+                const credential = EmailAuthProvider.credential(
+                    auth.currentUser.email, 
+                    password
+                );
+                await reauthenticateWithCredential(auth.currentUser, credential);
+                
+                // Close both modals and resolve with success
+                const mainModal = document.getElementById(mainModalId);
+                closePasswordModal(passwordModal);
+                if (mainModal) {
+                    closeReauthModal(mainModal, true);
+                }
+            } catch (error) {
+                console.error('Email reauthentication failed:', error);
+                showNotification('Authentication failed. Please check your password.', 'error');
+            }
+        }
+
+        function closePasswordModal(modal) {
+            modal.remove();
+        }
+
+        function closeReauthModal(modal, success) {
+            modal.remove();
+            if (window.reauthResolve) {
+                window.reauthResolve(success);
+                window.reauthResolve = null;
+            }
+        }
+
+        // Update user type in Firestore
+        async function updateUserType(newUserType) {
+            try {
+                await updateDoc(doc(db, "users", currentUser.uid), {
+                    userType: newUserType,
+                    updatedAt: serverTimestamp()
+                });
+                
+                // Update local state
+                currentUser.type = newUserType;
+                currentUser.userData.userType = newUserType;
+                
+            } catch (error) {
+                console.error('Error updating user type:', error);
+                throw error;
+            }
+        }
+
+        // Load user data from Firestore
+        async function loadUserData(userId) {
+            try {
+                const userDoc = await getDoc(doc(db, "users", userId));
+                
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    currentUser.userData = userData;
+                    currentUser.name = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email;
+                    currentUser.type = userData.userType || 'customer';
+                    currentUser.status = userData.status || 'active';
+                    
+                    // Update UI
+                    document.getElementById('user-name').textContent = currentUser.name;
+                    document.getElementById('user-type').textContent = formatUserType(currentUser.type);
+                    
+                } else {
+                    console.error('User document not found');
+                    showNotification('User data not found', 'error');
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                showNotification('Error loading user data', 'error');
+            }
+        }
+
+        // Load dashboard data based on user type
+        async function loadDashboardData() {
+            try {
+                switch (currentUser.type) {
+                    case 'customer':
+                        await loadCustomerDashboardData();
+                        break;
+                    case 'seller':
+                        await loadSellerDashboardData();
+                        break;
+                    case 'driver':
+                        await loadDriverDashboardData();
+                        break;
+                    case 'business':
+                        await loadBusinessDashboardData();
+                        break;
+                    default:
+                        await loadCustomerDashboardData();
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showNotification('Error loading dashboard data', 'error');
+            }
+        }
+
+        // Load customer-specific data
+        async function loadCustomerDashboardData() {
+            try {
+                // Load user deliveries
+                const deliveriesQuery = query(
+                    collection(db, "deliveries"),
+                    where("customerId", "==", currentUser.uid),
+                    orderBy("createdAt", "desc"),
+                    limit(10)
+                );
+                
+                const deliveriesSnapshot = await getDocs(deliveriesQuery);
+                
+                // Update stats
+                const totalDeliveries = deliveriesSnapshot.size;
+                const activeDeliveries = deliveriesSnapshot.docs.filter(doc => 
+                    ['pending', 'accepted', 'picked_up', 'in_transit'].includes(doc.data().status)
+                ).length;
+                
+                document.getElementById('total-deliveries').textContent = totalDeliveries;
+                document.getElementById('active-deliveries').textContent = activeDeliveries;
+                
+                // Update wallet balance
+                const walletBalance = currentUser.userData?.wallet?.balance || 0;
+                document.getElementById('wallet-balance').textContent = `UGX ${walletBalance.toLocaleString()}`;
+                
+                // Load active deliveries
+                await loadActiveDeliveries();
+                
+                // Load recent activity
+                await loadRecentActivity();
+                
+                // Load marketplace recommendations
+                await loadMarketplaceRecommendations();
+                
+            } catch (error) {
+                console.error('Error loading customer data:', error);
+            }
+        }
+
+        // Load active deliveries
+        async function loadActiveDeliveries() {
+            try {
+                const activeDeliveriesQuery = query(
+                    collection(db, "deliveries"),
+                    where("customerId", "==", currentUser.uid),
+                    where("status", "in", ["accepted", "picked_up", "in_transit"]),
+                    orderBy("createdAt", "desc")
+                );
+                
+                const snapshot = await getDocs(activeDeliveriesQuery);
+                const deliveriesList = document.getElementById('active-deliveries-list');
+                
+                if (snapshot.empty) {
+                    deliveriesList.innerHTML = `
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-box-open text-4xl mb-2"></i>
+                            <p>No active deliveries</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                deliveriesList.innerHTML = '';
+                
+                snapshot.forEach((doc) => {
+                    const delivery = doc.data();
+                    const deliveryItem = createDeliveryItem(delivery, doc.id);
+                    deliveriesList.appendChild(deliveryItem);
+                });
+                
+            } catch (error) {
+                console.error('Error loading active deliveries:', error);
+            }
+        }
+
+        // Create delivery item HTML
+        function createDeliveryItem(delivery, deliveryId) {
+            const statusConfig = {
+                'pending': { color: 'bg-yellow-100 text-yellow-700', text: 'Pending' },
+                'accepted': { color: 'bg-blue-100 text-blue-700', text: 'Accepted' },
+                'picked_up': { color: 'bg-orange-100 text-orange-700', text: 'Picked Up' },
+                'in_transit': { color: 'bg-purple-100 text-purple-700', text: 'In Transit' },
+                'delivered': { color: 'bg-green-100 text-green-700', text: 'Delivered' },
+                'cancelled': { color: 'bg-red-100 text-red-700', text: 'Cancelled' }
+            };
+            
+            const status = statusConfig[delivery.status] || statusConfig.pending;
+            const progress = delivery.progress || 0;
+            
+            const item = document.createElement('div');
+            item.className = 'flex items-center justify-between p-4 border border-gray-200 rounded-lg';
+            item.innerHTML = `
+                <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div>
+                        <p class="font-medium">${deliveryId}</p>
+                        <p class="text-sm text-gray-500">${delivery.pickupLocation} to ${delivery.deliveryLocation}</p>
+                    </div>
+                </div>
+                
+                <div class="text-right">
+                    <p class="font-medium text-sm ${status.color.split(' ')[1]}">${status.text}</p>
+                    <div class="w-32 bg-gray-200 rounded-full h-2 mt-1">
+                        <div class="bg-green-500 h-2 rounded-full" style="width: ${progress}%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">${delivery.estimatedDelivery || 'Estimated: Soon'}</p>
+                </div>
+            `;
+            
+            return item;
+        }
+
+        // Load recent activity
+        async function loadRecentActivity() {
+            try {
+                // This would typically query an activities collection
+                // For now, we'll use a simplified version
+                const activityContainer = document.getElementById('recent-activity');
+                
+                // Sample activities - in real app, this would come from Firestore
+                const sampleActivities = [
+                    {
+                        type: 'delivery_completed',
+                        message: 'Delivery completed',
+                        details: 'FKC-987654 • 2 hours ago',
+                        amount: 'UGX 15,000',
+                        icon: 'fas fa-check',
+                        color: 'green'
+                    },
+                    {
+                        type: 'new_delivery',
+                        message: 'New delivery booked',
+                        details: 'Kampala to Gulu • 5 hours ago',
+                        amount: 'UGX 25,000',
+                        icon: 'fas fa-shipping-fast',
+                        color: 'blue'
+                    }
+                ];
+                
+                activityContainer.innerHTML = '';
+                
+                sampleActivities.forEach(activity => {
+                    const activityItem = document.createElement('div');
+                    activityItem.className = 'flex items-center space-x-4 p-3 hover:bg-gray-50 rounded-lg transition';
+                    activityItem.innerHTML = `
+                        <div class="w-10 h-10 bg-${activity.color}-100 rounded-full flex items-center justify-center text-${activity.color}-600">
+                            <i class="${activity.icon}"></i>
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-medium">${activity.message}</p>
+                            <p class="text-sm text-gray-500">${activity.details}</p>
+                        </div>
+                        <span class="text-${activity.color}-600 font-medium">${activity.amount}</span>
+                    `;
+                    activityContainer.appendChild(activityItem);
+                });
+                
+            } catch (error) {
+                console.error('Error loading recent activity:', error);
+            }
+        }
+
+        // Load marketplace recommendations
+        async function loadMarketplaceRecommendations() {
+            try {
+                const recommendationsContainer = document.getElementById('marketplace-recommendations');
+                
+                // Sample recommendations - in real app, this would come from Firestore
+                const sampleRecommendations = [
+                    { name: 'Fresh Maize', price: 'UGX 2,500/kg', icon: 'fas fa-seedling' },
+                    { name: 'Construction Cement', price: 'UGX 35,000/bag', icon: 'fas fa-hammer' },
+                    { name: 'Fresh Fruits', price: 'UGX 5,000/basket', icon: 'fas fa-apple-alt' },
+                    { name: 'Farm Tools', price: 'UGX 12,000', icon: 'fas fa-tools' }
+                ];
+                
+                recommendationsContainer.innerHTML = '';
+                
+                sampleRecommendations.forEach(item => {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'border border-gray-200 rounded-lg p-3 hover:border-primary transition cursor-pointer';
+                    itemElement.innerHTML = `
+                        <div class="h-20 bg-gray-200 rounded-lg mb-2 flex items-center justify-center">
+                            <i class="${item.icon} text-gray-500 text-xl"></i>
+                        </div>
+                        <p class="font-medium text-sm">${item.name}</p>
+                        <p class="text-primary font-bold text-sm">${item.price}</p>
+                    `;
+                    recommendationsContainer.appendChild(itemElement);
+                });
+                
+            } catch (error) {
+                console.error('Error loading recommendations:', error);
+            }
+        }
+
+        // Initialize user dashboard based on type and status
+        function initializeUserDashboard(userType, status) {
+            // Handle driver pending approval
+            if (userType === 'driver' && status === 'pending') {
+                showDriverPendingApproval();
+                return;
+            }
+            
+            // Handle other user types
+            switchDashboard(userType);
+        }
+
+        // Show driver pending approval screen
+        function showDriverPendingApproval() {
+            // Hide all dashboard views
+            document.querySelectorAll('.dashboard-view').forEach(view => {
+                view.classList.add('hidden');
+            });
+            
+            // Show pending approval view
+            document.getElementById('driver-pending-view').classList.remove('hidden');
+            
+            // Update dashboard title and user type
+            document.getElementById('dashboard-title').textContent = 'Driver Application Pending';
+            document.getElementById('dashboard-subtitle').textContent = 'Your application is under review';
+            document.getElementById('user-type').textContent = 'Driver (Pending)';
+            
+            // Disable driver option in switch
+            const driverOption = document.querySelector('#user-type-switch option[value="driver"]');
+            if (driverOption) {
+                driverOption.disabled = true;
+            }
+        }
+
+        // Switch between dashboard views
+        function switchDashboard(userType) {
+            // Hide all dashboard views
+            document.querySelectorAll('.dashboard-view').forEach(view => {
+                view.classList.add('hidden');
+            });
+            
+            // Show selected dashboard
+            const selectedDashboard = document.getElementById(`${userType}-dashboard`);
+            if (selectedDashboard) {
+                selectedDashboard.classList.remove('hidden');
+            }
+            
+            // Update dashboard title and subtitle
+            const titles = {
+                customer: "Customer Dashboard",
+                seller: "Seller Dashboard", 
+                driver: "Driver Dashboard",
+                business: "Business Dashboard"
+            };
+            
+            const subtitles = {
+                customer: "Welcome back! Here's your activity summary.",
+                seller: "Manage your products and track sales.",
+                driver: "View your deliveries and earnings.",
+                business: "Manage corporate logistics and analytics."
+            };
+            
+            document.getElementById('dashboard-title').textContent = titles[userType] || "Dashboard";
+            document.getElementById('dashboard-subtitle').textContent = subtitles[userType] || "Welcome to your dashboard";
+            
+            // Update current user type
+            currentUser.type = userType;
+            
+            // Load data for the selected dashboard
+            loadDashboardData();
+        }
+
+        // Format user type for display
+        function formatUserType(userType) {
+            const types = {
+                customer: "Customer",
+                seller: "Seller",
+                driver: "Driver",
+                business: "Business"
+            };
+            return types[userType] || "User";
+        }
+
+        // Handle logout
+        async function handleLogout() {
+            try {
+                await signOut(auth);
+                window.location.href = 'authentication.html';
+            } catch (error) {
+                console.error('Error signing out:', error);
+                showNotification('Error signing out', 'error');
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            const bgColor = type === 'error' ? 'bg-red-500' : type === 'success' ? 'bg-green-500' : 'bg-blue-500';
+            
+            notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-transform duration-300 ease-in-out`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Remove notification after 3 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Action functions
+        function newDelivery() {
+            showNotification('New delivery feature coming soon!', 'info');
+        }
+
+        function trackDelivery() {
+            showNotification('Track delivery feature coming soon!', 'info');
+        }
+
+        function browseMarketplace() {
+            showNotification('Marketplace feature coming soon!', 'info');
+        }
+
+        // Placeholder functions for other dashboard types
+        async function loadSellerDashboardData() {
+            // Implementation for seller dashboard
+            showNotification('Loading seller data...', 'info');
+        }
+
+        async function loadDriverDashboardData() {
+            // Implementation for driver dashboard
+            showNotification('Loading driver data...', 'info');
+        }
+
+        async function loadBusinessDashboardData() {
+            // Implementation for business dashboard
+            showNotification('Loading business data...', 'info');
+        }
+    </script>
+</body>
+  </html>
