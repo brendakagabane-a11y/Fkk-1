@@ -91,6 +91,38 @@ class FikaConnectApp {
         document.querySelectorAll('main > section').forEach(section => {
             section.classList.add('hidden');
         });
+        showSection(sectionId) {
+    this.hideAllSections();
+    
+    const section = document.getElementById(sectionId);
+    if (section) {
+        section.classList.remove('hidden');
+        section.classList.add('fade-in');
+        this.currentSection = sectionId;
+        
+        // Initialize section-specific manager
+        this.initializeSectionManager(sectionId);
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+        toast.error(`Section ${sectionId} not found`);
+    }
+}
+
+initializeSectionManager(sectionId) {
+    const managerMap = {
+        'send-receive': 'sendReceive',
+        'marketplace': 'marketplace', 
+        'tracking': 'tracking',
+        'drivers': 'drivers'
+    };
+    
+    const managerKey = managerMap[sectionId];
+    if (managerKey && this.managers[managerKey]) {
+        this.managers[managerKey].onSectionShow?.();
+    }
+        }
         
         // Hide service options
         document.querySelector('.service-options')?.classList.add('hidden');
