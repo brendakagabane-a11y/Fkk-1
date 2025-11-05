@@ -1,6 +1,7 @@
-import { auth, db, storage, serverTimestamp, addDoc, collection, doc, setDoc, ref, uploadBytes, getDownloadURL } from './firebase-config.js';
+import { auth, db, serverTimestamp, addDoc, collection, query, where, getDocs } from './firebase-config.js';
 import authManager from './auth-manager.js';
-import { showToast, generateId, formatCurrency } from './utils.js';
+import imageUploader from './image-uploader.js';
+import { showToast, generateId, formatCurrency, formatPhone } from './utils.js';
 
 class SendReceiveManager {
     constructor() {
@@ -8,6 +9,7 @@ class SendReceiveManager {
         this.packagePhotos = [];
         this.bookingData = {};
         this.collectionPoints = [];
+        this.groupDeliveries = [];
         this.init();
     }
 
@@ -15,6 +17,7 @@ class SendReceiveManager {
         this.setupEventListeners();
         this.loadCollectionPoints();
         this.setMinDate();
+        this.loadGroupDeliveries();
     }
 
     setMinDate() {
@@ -23,6 +26,8 @@ class SendReceiveManager {
         const pickupDate = document.getElementById('pickup-date');
         if (pickupDate) {
             pickupDate.min = today;
+            // Set default to today
+            pickupDate.value = today;
         }
     }
 
@@ -57,6 +62,15 @@ class SendReceiveManager {
 
         // Book now button
         document.getElementById('book-now')?.addEventListener('click', () => this.submitBooking());
+
+        // Group delivery fields
+        document.getElementById('pickup-zone')?.addEventListener('change', () => this.checkGroupMatches());
+        document.getElementById('destination-zone')?.addEventListener('change', () => this.checkGroupMatches());
+        document.getElementById('delivery-window')?.addEventListener('change', () => this.checkGroupMatches());
+
+        // Store pickup fields
+        document.getElementById('pickup-points')?.addEventListener('change', () => this.calculateStorePrice());
+        document.getElementById('dropoff-points')?.addEventListener('change', () => this.calculateStorePrice());
     }
 
     selectDeliveryType(element) {
@@ -77,6 +91,9 @@ class SendReceiveManager {
 
         // Recalculate price
         this.calculatePrice();
+
+        // Show appropriate instructions
+        this.showDeliveryInstructions(type);
     }
 
     toggleDeliveryTypeFields(type) {
@@ -88,8 +105,10 @@ class SendReceiveManager {
         // Show fields relevant to selected type
         if (type === 'store') {
             document.getElementById('store-pickup-fields').style.display = 'block';
+            this.calculateStorePrice();
         } else if (type === 'group') {
             document.getElementById('group-delivery-fields').style.display = 'block';
+            this.checkGroupMatches();
         }
 
         // Update urgency indicator
@@ -97,13 +116,27 @@ class SendReceiveManager {
     }
 
     updateUrgencyIndicator(type) {
-        const urgencyBadge = document.createElement('div');
-        urgencyBadge.className = 'absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full';
-        
+        // Remove any existing badges
+        document.querySelectorAll('.urgency-badge').forEach(badge => badge.remove());
+
         if (type === 'urgent') {
-            urgencyBadge.textContent = 'Priority';
-            document.querySelector('.delivery-option[data-type="urgent"]').appendChild(urgencyBadge);
+            const badge = document.createElement('div');
+            badge.className = 'urgency-badge absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full';
+            badge.textContent = 'Priority';
+            document.querySelector('.delivery-option[data-type="urgent"]').appendChild(badge);
         }
+    }
+
+    showDeliveryInstructions(type) {
+        const instructions = {
+            direct: 'Door-to-door delivery with real-time tracking',
+            urgent: 'Priority service with faster delivery times (+50% fee)',
+            store: 'Pick up and drop off at partner locations for lower costs',
+            group: 'Share transport costs with others going the same way'
+        };
+
+        // You could display these instructions in the UI
+        console.log(`Delivery type: ${type} - ${instructions[type]}`);
     }
 
     getCurrentLocation(type) {
@@ -156,23 +189,26 @@ class SendReceiveManager {
             return;
         }
         
-        showToast('Calculating route...', 'info');
-        
-        // Simulate API call delay
-        setTimeout(() => {
-            // Simulate route calculation (in real app, use Google Maps Distance Matrix API)
+        if (this.selectedDeliveryType === 'store') {
+            // For store pickup, use fixed distance
+            this.bookingData.distance = 8;
+            this.bookingData.estimatedTime = 15;
+        } else {
+            // Simulate route calculation
             const distance = Math.floor(Math.random() * 50) + 5; // 5-55 km
             const time = Math.floor(distance * 1.5); // 1.5 mins per km
             
-            document.getElementById('distance-display').textContent = `${distance} km`;
-            document.getElementById('time-display').textContent = `${time} mins`;
-            
             this.bookingData.distance = distance;
             this.bookingData.estimatedTime = time;
-            
-            showToast('Route calculated successfully', 'success');
-            this.calculatePrice();
-        }, 1500);
+        }
+        
+        this.updateRouteDisplay();
+        this.calculatePrice();
+    }
+
+    updateRouteDisplay() {
+        document.getElementById('distance-display').textContent = `${this.bookingData.distance || '--'} km`;
+        document.getElementById('time-display').textContent = `${this.bookingData.estimatedTime || '--'} mins`;
     }
 
     calculatePrice() {
@@ -184,55 +220,75 @@ class SendReceiveManager {
         const vehicleType = document.getElementById('vehicle-type').value;
         const distance = this.bookingData.distance || 0;
         
-        // Base prices for delivery types
-        const basePrices = {
-            direct: 10000,
-            store: 7000,
-            urgent: 15000, // 50% more than direct
-            group: 5000
-        };
-        
-        // Calculate base price
-        let basePrice = basePrices[this.selectedDeliveryType] || 10000;
-        
-        // Adjust for package type
-        const typeMultipliers = {
-            document: 1,
-            small: 1.2,
-            medium: 1.5,
-            large: 2,
-            fragile: 1.8
-        };
-        
-        basePrice *= (typeMultipliers[packageType] || 1);
-        
-        // Adjust for weight (UGX 500 per kg over 5kg)
-        const weightSurcharge = Math.max(0, weight - 5) * 500;
-        
-        // Adjust for vehicle type
-        const vehicleMultipliers = {
-            boda: 1,
-            pickup: 1.3,
-            van: 1.5,
-            truck: 2
-        };
-        
-        basePrice *= (vehicleMultipliers[vehicleType] || 1);
-        
-        // Distance factor
-        const distanceCost = distance * 300;
-        
-        // Calculate total
-        const total = basePrice + weightSurcharge + distanceCost;
+        let total = 0;
+        let priceBreakdown = {};
+
+        if (this.selectedDeliveryType === 'store') {
+            total = this.calculateStorePrice();
+            priceBreakdown = { basePrice: total, weightSurcharge: 0, distanceCost: 0 };
+        } else {
+            // Base prices for delivery types
+            const basePrices = {
+                direct: 10000,
+                urgent: 15000, // 50% more than direct
+                group: 5000
+            };
+            
+            // Calculate base price
+            let basePrice = basePrices[this.selectedDeliveryType] || 10000;
+            
+            // Adjust for package type
+            const typeMultipliers = {
+                document: 1,
+                small: 1.2,
+                medium: 1.5,
+                large: 2,
+                fragile: 1.8
+            };
+            
+            basePrice *= (typeMultipliers[packageType] || 1);
+            
+            // Adjust for weight (UGX 500 per kg over 5kg)
+            const weightSurcharge = Math.max(0, weight - 5) * 500;
+            
+            // Adjust for vehicle type
+            const vehicleMultipliers = {
+                boda: 1,
+                pickup: 1.3,
+                van: 1.5,
+                truck: 2
+            };
+            
+            basePrice *= (vehicleMultipliers[vehicleType] || 1);
+            
+            // Distance factor
+            const distanceCost = distance * 300;
+            
+            // Calculate total
+            total = basePrice + weightSurcharge + distanceCost;
+            priceBreakdown = { basePrice, weightSurcharge, distanceCost };
+        }
         
         // Update display
         document.getElementById('price-display').textContent = formatCurrency(total);
-        document.getElementById('base-price').textContent = formatCurrency(basePrice);
-        document.getElementById('distance-price').textContent = formatCurrency(distanceCost);
-        document.getElementById('weight-price').textContent = formatCurrency(weightSurcharge);
+        document.getElementById('base-price').textContent = formatCurrency(priceBreakdown.basePrice);
+        document.getElementById('distance-price').textContent = formatCurrency(priceBreakdown.distanceCost);
+        document.getElementById('weight-price').textContent = formatCurrency(priceBreakdown.weightSurcharge);
         
         this.bookingData.calculatedPrice = total;
-        this.bookingData.priceBreakdown = { basePrice, weightSurcharge, distanceCost };
+        this.bookingData.priceBreakdown = priceBreakdown;
+    }
+
+    calculateStorePrice() {
+        const pickupPoint = document.getElementById('pickup-points').value;
+        const dropoffPoint = document.getElementById('dropoff-points').value;
+        
+        if (!pickupPoint || !dropoffPoint) {
+            return 7000; // Default store price
+        }
+        
+        // Fixed pricing for store-to-store delivery
+        return 7000;
     }
 
     handlePhotoUpload(e) {
@@ -247,21 +303,20 @@ class SendReceiveManager {
             return;
         }
         
+        let validFilesCount = 0;
+        
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             
-            // Validate file type and size
-            if (!file.type.startsWith('image/')) {
-                showToast('Please upload only image files', 'error');
-                continue;
-            }
-            
-            if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                showToast('Image size should be less than 5MB', 'error');
+            // Validate file using our uploader
+            const validation = imageUploader.validateImage(file);
+            if (!validation.valid) {
+                showToast(`Skipped ${file.name}: ${validation.error}`, 'warning');
                 continue;
             }
             
             this.packagePhotos.push(file);
+            validFilesCount++;
             
             const reader = new FileReader();
             
@@ -269,7 +324,7 @@ class SendReceiveManager {
                 const imgContainer = document.createElement('div');
                 imgContainer.className = 'relative';
                 imgContainer.innerHTML = `
-                    <img src="${e.target.result}" class="w-20 h-20 object-cover rounded-lg border">
+                    <img src="${e.target.result}" class="w-20 h-20 object-cover rounded-lg border" alt="Package photo ${i + 1}">
                     <button class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs" data-index="${i}">
                         ×
                     </button>
@@ -287,8 +342,8 @@ class SendReceiveManager {
             reader.readAsDataURL(file);
         }
         
-        if (this.packagePhotos.length > 0) {
-            showToast(`${this.packagePhotos.length} photo(s) selected`, 'success');
+        if (validFilesCount > 0) {
+            showToast(`📸 ${validFilesCount} photo(s) selected and ready for upload`, 'success');
         }
     }
 
@@ -303,26 +358,33 @@ class SendReceiveManager {
     }
 
     async uploadPhotos() {
-        const photoUrls = [];
-        
-        if (this.packagePhotos.length === 0) return photoUrls;
-        
-        showToast('Uploading photos...', 'info');
-        
-        for (const photo of this.packagePhotos) {
-            try {
-                const storageRef = ref(storage, `package-photos/${Date.now()}-${photo.name}`);
-                const snapshot = await uploadBytes(storageRef, photo);
-                const downloadURL = await getDownloadURL(snapshot.ref);
-                photoUrls.push(downloadURL);
-            } catch (error) {
-                console.error('Error uploading photo:', error);
-                showToast('Error uploading some photos', 'error');
+        if (this.packagePhotos.length === 0) return [];
+
+        showToast('Uploading photos to ImgBB...', 'info');
+
+        try {
+            // Use ImgBB for free image hosting with progress
+            const uploadResults = await imageUploader.uploadMultipleImages(this.packagePhotos);
+            
+            // Extract just the URLs for storage
+            const photoUrls = uploadResults.map(result => result.url);
+            
+            showToast(`✅ ${photoUrls.length} photo(s) uploaded successfully!`, 'success');
+            return photoUrls;
+
+        } catch (error) {
+            console.error('Error uploading photos to ImgBB:', error);
+            
+            // Check if it's an API key error
+            if (error.message.includes('API key') || error.message.includes('unavailable')) {
+                showToast('⚠️ Image service temporarily down. Proceeding without photos.', 'warning');
+                return [];
             }
+            
+            // For other errors, show the message
+            showToast(`❌ Photo upload failed: ${error.message}`, 'error');
+            throw error;
         }
-        
-        showToast('Photos uploaded successfully', 'success');
-        return photoUrls;
     }
 
     validateForm() {
@@ -333,7 +395,10 @@ class SendReceiveManager {
         const senderPhone = document.getElementById('sender-phone').value;
         const receiverName = document.getElementById('receiver-name').value;
         const receiverPhone = document.getElementById('receiver-phone').value;
+        const pickupDate = document.getElementById('pickup-date').value;
+        const deliveryTime = document.getElementById('delivery-time').value;
         
+        // Basic validation
         if (!pickup || !delivery) {
             showToast('Please enter both pickup and delivery locations', 'error');
             return false;
@@ -354,6 +419,28 @@ class SendReceiveManager {
             return false;
         }
         
+        if (!pickupDate) {
+            showToast('Please select a pickup date', 'error');
+            return false;
+        }
+        
+        if (!deliveryTime) {
+            showToast('Please select a delivery time', 'error');
+            return false;
+        }
+        
+        // Phone validation
+        if (senderPhone && !this.validateUgandaPhone(senderPhone)) {
+            showToast('Please enter a valid Uganda phone number for sender', 'error');
+            return false;
+        }
+        
+        if (receiverPhone && !this.validateUgandaPhone(receiverPhone)) {
+            showToast('Please enter a valid Uganda phone number for receiver', 'error');
+            return false;
+        }
+        
+        // Delivery type specific validation
         if (this.selectedDeliveryType === 'store') {
             const pickupPoint = document.getElementById('pickup-points').value;
             const dropoffPoint = document.getElementById('dropoff-points').value;
@@ -366,13 +453,25 @@ class SendReceiveManager {
         if (this.selectedDeliveryType === 'group') {
             const pickupZone = document.getElementById('pickup-zone').value;
             const destinationZone = document.getElementById('destination-zone').value;
+            const deliveryWindow = document.getElementById('delivery-window').value;
+            
             if (!pickupZone || !destinationZone) {
                 showToast('Please select both pickup and destination zones', 'error');
+                return false;
+            }
+            
+            if (!deliveryWindow) {
+                showToast('Please select a delivery time window', 'error');
                 return false;
             }
         }
         
         return true;
+    }
+
+    validateUgandaPhone(phone) {
+        const cleaned = phone.replace(/\D/g, '');
+        return cleaned.length === 9 && cleaned.startsWith('7');
     }
 
     async submitBooking() {
@@ -392,38 +491,21 @@ class SendReceiveManager {
         this.setLoadingState(bookBtn, true, 'Processing...');
         
         try {
-            // Upload photos if any
-            const photoUrls = await this.uploadPhotos();
+            let bookingData;
             
-            // Generate booking ID
-            const bookingId = generateId('FKC');
-            
-            // Get form values
-            const formData = this.getFormData();
-            
-            // Prepare booking data
-            const bookingData = {
-                id: bookingId,
-                userId: authManager.currentUser.uid,
-                userEmail: authManager.currentUser.email,
-                userName: authManager.currentUser.displayName,
-                deliveryType: this.selectedDeliveryType,
-                status: 'pending',
-                ...formData,
-                photos: photoUrls,
-                calculatedPrice: this.bookingData.calculatedPrice,
-                priceBreakdown: this.bookingData.priceBreakdown,
-                distance: this.bookingData.distance || 0,
-                estimatedTime: this.bookingData.estimatedTime || 0,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp()
-            };
+            if (this.selectedDeliveryType === 'group') {
+                // Handle group delivery logic
+                bookingData = await this.handleGroupDelivery();
+            } else {
+                // Handle individual delivery
+                bookingData = await this.handleIndividualDelivery();
+            }
             
             // Save to Firestore
             const docRef = await addDoc(collection(db, 'bookings'), bookingData);
             
             // Show success modal
-            this.showBookingConfirmation(bookingId, bookingData.calculatedPrice, formData);
+            this.showBookingConfirmation(bookingData.id, bookingData.calculatedPrice, bookingData);
             
             // Reset form
             this.resetForm();
@@ -437,7 +519,137 @@ class SendReceiveManager {
         }
     }
 
+    async handleIndividualDelivery() {
+        // Upload photos if any
+        const photoUrls = await this.uploadPhotos();
+        
+        // Generate booking ID
+        const bookingId = generateId('FKC');
+        
+        // Get form values
+        const formData = this.getFormData();
+        
+        // Prepare booking data
+        return {
+            id: bookingId,
+            userId: authManager.currentUser.uid,
+            userEmail: authManager.currentUser.email,
+            userName: authManager.currentUser.displayName || `${formData.senderName}`,
+            deliveryType: this.selectedDeliveryType,
+            status: 'pending',
+            ...formData,
+            photos: photoUrls,
+            calculatedPrice: this.bookingData.calculatedPrice,
+            priceBreakdown: this.bookingData.priceBreakdown,
+            distance: this.bookingData.distance || 0,
+            estimatedTime: this.bookingData.estimatedTime || 0,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        };
+    }
+
+    async handleGroupDelivery() {
+        const pickupZone = document.getElementById('pickup-zone').value;
+        const destinationZone = document.getElementById('destination-zone').value;
+        const deliveryWindow = document.getElementById('delivery-window').value;
+        
+        // Check for existing group deliveries
+        const matchingGroup = this.findMatchingGroup(pickupZone, destinationZone, deliveryWindow);
+        
+        if (matchingGroup && matchingGroup.members.length < 4) {
+            // Join existing group
+            return await this.joinExistingGroup(matchingGroup);
+        } else {
+            // Create new group
+            return await this.createNewGroup();
+        }
+    }
+
+    findMatchingGroup(pickupZone, destinationZone, deliveryWindow) {
+        return this.groupDeliveries.find(group => 
+            group.pickupZone === pickupZone &&
+            group.destinationZone === destinationZone &&
+            group.deliveryWindow === deliveryWindow &&
+            group.status === 'waiting' &&
+            group.members.length < 4
+        );
+    }
+
+    async joinExistingGroup(group) {
+        // Upload photos
+        const photoUrls = await this.uploadPhotos();
+        
+        // Get form data
+        const formData = this.getFormData();
+        
+        // Calculate shared price (average of group)
+        const sharedPrice = Math.floor((group.totalPrice + this.bookingData.calculatedPrice) / (group.members.length + 1));
+        
+        // Create booking for joining member
+        const bookingData = {
+            id: generateId('FKC'),
+            userId: authManager.currentUser.uid,
+            userEmail: authManager.currentUser.email,
+            userName: authManager.currentUser.displayName || `${formData.senderName}`,
+            deliveryType: 'group',
+            status: 'confirmed',
+            groupId: group.id,
+            ...formData,
+            photos: photoUrls,
+            calculatedPrice: sharedPrice,
+            priceBreakdown: { basePrice: sharedPrice, weightSurcharge: 0, distanceCost: 0 },
+            distance: group.distance || 0,
+            estimatedTime: group.estimatedTime || 0,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        };
+        
+        // Update group in Firestore (in real implementation)
+        console.log('Joining group:', group.id);
+        
+        return bookingData;
+    }
+
+    async createNewGroup() {
+        // Upload photos
+        const photoUrls = await this.uploadPhotos();
+        
+        // Get form data
+        const formData = this.getFormData();
+        
+        // Generate group ID
+        const groupId = generateId('GRP');
+        
+        // Create booking
+        const bookingData = {
+            id: generateId('FKC'),
+            userId: authManager.currentUser.uid,
+            userEmail: authManager.currentUser.email,
+            userName: authManager.currentUser.displayName || `${formData.senderName}`,
+            deliveryType: 'group',
+            status: 'waiting',
+            groupId: groupId,
+            groupStatus: 'waiting',
+            groupMembers: [authManager.currentUser.uid],
+            ...formData,
+            photos: photoUrls,
+            calculatedPrice: this.bookingData.calculatedPrice,
+            priceBreakdown: this.bookingData.priceBreakdown,
+            distance: this.bookingData.distance || 0,
+            estimatedTime: this.bookingData.estimatedTime || 0,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+        };
+        
+        // Create group delivery record (in real implementation)
+        console.log('Creating new group:', groupId);
+        
+        return bookingData;
+    }
+
     getFormData() {
+        const paymentMethod = document.querySelector('input[name="payment-method"]:checked');
+        
         return {
             // Sender information
             senderName: document.getElementById('sender-name').value,
@@ -468,7 +680,7 @@ class SendReceiveManager {
             pickupDate: document.getElementById('pickup-date').value,
             deliveryTime: document.getElementById('delivery-time').value,
             packageValue: parseInt(document.getElementById('package-value').value) || 0,
-            paymentMethod: document.querySelector('input[name="payment-method"]:checked').value,
+            paymentMethod: paymentMethod ? paymentMethod.value : 'cash',
             
             // Additional fields based on delivery type
             ...this.getDeliveryTypeSpecificData()
@@ -481,14 +693,12 @@ class SendReceiveManager {
         if (this.selectedDeliveryType === 'store') {
             data.pickupPoint = document.getElementById('pickup-points').value;
             data.dropoffPoint = document.getElementById('dropoff-points').value;
+            data.pickupPointName = document.getElementById('pickup-points').options[document.getElementById('pickup-points').selectedIndex]?.text || '';
+            data.dropoffPointName = document.getElementById('dropoff-points').options[document.getElementById('dropoff-points').selectedIndex]?.text || '';
         } else if (this.selectedDeliveryType === 'group') {
             data.pickupZone = document.getElementById('pickup-zone').value;
             data.destinationZone = document.getElementById('destination-zone').value;
             data.deliveryWindow = document.getElementById('delivery-window').value;
-            
-            // For group delivery, we need to handle matching logic
-            data.groupStatus = 'waiting';
-            data.groupMembers = [authManager.currentUser.uid];
         }
         
         return data;
@@ -554,6 +764,17 @@ class SendReceiveManager {
                                 <p class="font-semibold capitalize">${formData.vehicleType}</p>
                             </div>
                         </div>
+
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <p class="text-gray-600">Pickup Date</p>
+                                <p class="font-semibold">${formData.pickupDate}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-600">Delivery Time</p>
+                                <p class="font-semibold capitalize">${formData.deliveryTime}</p>
+                            </div>
+                        </div>
                         
                         <div class="border-t pt-3">
                             <p class="text-lg font-semibold text-primary text-center">Total: ${formatCurrency(price)}</p>
@@ -564,7 +785,10 @@ class SendReceiveManager {
                         <button onclick="window.location.href='tracking.html?id=${bookingId}'" class="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition">
                             <i class="fas fa-map-marker-alt mr-2"></i> Track Delivery
                         </button>
-                        <button id="close-confirmation-btn" class="w-full py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition">
+                        <button onclick="window.location.href='my-bookings.html'" class="w-full py-2 border border-primary text-primary font-semibold rounded-lg hover:bg-primary hover:text-white transition">
+                            <i class="fas fa-list mr-2"></i> View All Bookings
+                        </button>
+                        <button id="close-confirmation-btn" class="w-full py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition">
                             Close
                         </button>
                     </div>
@@ -591,7 +815,14 @@ class SendReceiveManager {
         const inputs = form.querySelectorAll('input, select, textarea');
         inputs.forEach(input => {
             if (input.type !== 'button' && input.type !== 'submit') {
-                input.value = '';
+                if (input.type === 'radio') {
+                    input.checked = input.value === 'cash'; // Reset to cash
+                } else if (input.id === 'pickup-date') {
+                    // Keep today's date as default
+                    input.value = new Date().toISOString().split('T')[0];
+                } else {
+                    input.value = '';
+                }
             }
         });
         
@@ -612,12 +843,16 @@ class SendReceiveManager {
         document.getElementById('distance-display').textContent = '-- km';
         document.getElementById('time-display').textContent = '-- mins';
         document.getElementById('price-display').textContent = 'UGX 0';
+        
+        // Hide special fields
+        document.querySelectorAll('.delivery-type-field').forEach(field => {
+            field.style.display = 'none';
+        });
     }
 
     async loadCollectionPoints() {
         try {
-            // In a real app, this would fetch from Firestore
-            // For now, using mock data
+            // Mock collection points - in real app, fetch from Firestore
             this.collectionPoints = [
                 { id: 'nakasero', name: 'Nakasero Market', address: 'Kampala Central', type: 'market' },
                 { id: 'owino', name: 'Owino Market', address: 'St. Balikuddembe Market, Kampala', type: 'market' },
@@ -631,6 +866,10 @@ class SendReceiveManager {
             const dropoffPointsSelect = document.getElementById('dropoff-points');
             
             if (pickupPointsSelect && dropoffPointsSelect) {
+                // Clear existing options
+                pickupPointsSelect.innerHTML = '';
+                dropoffPointsSelect.innerHTML = '';
+                
                 // Add default option
                 const defaultOption = document.createElement('option');
                 defaultOption.value = '';
@@ -655,6 +894,76 @@ class SendReceiveManager {
             console.error('Error loading collection points:', error);
             showToast('Error loading collection points', 'error');
         }
+    }
+
+    async loadGroupDeliveries() {
+        try {
+            // In real app, fetch from Firestore
+            // For now, using mock data
+            this.groupDeliveries = [
+                {
+                    id: 'GRP-123',
+                    pickupZone: 'kampala',
+                    destinationZone: 'wakiso',
+                    deliveryWindow: 'morning',
+                    status: 'waiting',
+                    members: ['user1', 'user2'],
+                    totalPrice: 15000,
+                    distance: 20,
+                    estimatedTime: 30
+                }
+            ];
+        } catch (error) {
+            console.error('Error loading group deliveries:', error);
+        }
+    }
+
+    checkGroupMatches() {
+        const pickupZone = document.getElementById('pickup-zone').value;
+        const destinationZone = document.getElementById('destination-zone').value;
+        const deliveryWindow = document.getElementById('delivery-window').value;
+        
+        if (pickupZone && destinationZone && deliveryWindow) {
+            const matchingGroup = this.findMatchingGroup(pickupZone, destinationZone, deliveryWindow);
+            
+            if (matchingGroup) {
+                this.showGroupMatchNotification(matchingGroup);
+            }
+        }
+    }
+
+    showGroupMatchNotification(group) {
+        const notification = document.createElement('div');
+        notification.className = 'bg-green-50 border border-green-200 rounded-lg p-4 mb-4';
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-users text-green-500 mr-3"></i>
+                <div class="flex-1">
+                    <p class="text-green-800 font-semibold">Group Delivery Available!</p>
+                    <p class="text-green-600 text-sm">Join ${group.members.length} other(s) going the same way and save ${formatCurrency(this.bookingData.calculatedPrice - (group.totalPrice / (group.members.length + 1)))}</p>
+                </div>
+                <button id="join-group-btn" class="ml-2 px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition">
+                    Join Group
+                </button>
+            </div>
+        `;
+        
+        const existingNotification = document.querySelector('.bg-green-50.border-green-200');
+        if (existingNotification) {
+            existingNotification.remove();
+        }
+        
+        document.getElementById('group-delivery-fields').prepend(notification);
+        
+        document.getElementById('join-group-btn').addEventListener('click', () => {
+            this.joinGroupDelivery(group);
+        });
+    }
+
+    joinGroupDelivery(group) {
+        // Update the booking to join the group
+        showToast('Joining group delivery...', 'info');
+        // The actual joining happens in submitBooking()
     }
 }
 
