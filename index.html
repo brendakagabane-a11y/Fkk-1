@@ -1125,4 +1125,28 @@
         });
     </script>
 </body>
+    <script>
+// Super simple test - if you see this alert, JS is working
+alert('JavaScript is working! If you see this, the page should be interactive.');
+
+// Basic function
+function showSection(sectionId) {
+    // Hide all sections
+    document.querySelectorAll('section').forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // Show selected section
+    const target = document.getElementById(sectionId);
+    if (target) {
+        target.style.display = 'block';
+    }
+    
+    // Hide main service options
+    document.querySelector('.bg-white.py-12').style.display = 'none';
+}
+
+// Make function global
+window.showSection = showSection;
+                              </script>
 </html>
