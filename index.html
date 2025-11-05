@@ -1018,14 +1018,19 @@
     </button>
 
     <!-- Firebase and App Scripts -->
+                        <!-- ... your existing HTML content ... -->
+
+    <!-- Firebase and App Scripts -->
     <script type="module" src="js/firebase-config.js"></script>
     <script type="module" src="js/auth-manager.js"></script>
+    <script type="module" src="js/image-uploader.js"></script>
+    <script type="module" src="js/utils.js"></script>
     <script type="module" src="js/sendReceive.js"></script>
     <script type="module" src="js/marketplace.js"></script>
     <script type="module" src="js/tracking.js"></script>
     <script type="module" src="js/drivers.js"></script>
-    <script type="module" src="js/utils.js"></script>
 
+    <!-- Your existing script -->
     <script>
         // Global variables
         let currentUser = null;
@@ -1091,20 +1096,20 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             // Set up back buttons
-            document.getElementById('back-to-services').addEventListener('click', showServiceOptions);
-            document.getElementById('back-to-services-marketplace').addEventListener('click', showServiceOptions);
-            document.getElementById('back-to-services-tracking').addEventListener('click', showServiceOptions);
-            document.getElementById('back-to-services-drivers').addEventListener('click', showServiceOptions);
+            document.getElementById('back-to-services')?.addEventListener('click', showServiceOptions);
+            document.getElementById('back-to-services-marketplace')?.addEventListener('click', showServiceOptions);
+            document.getElementById('back-to-services-tracking')?.addEventListener('click', showServiceOptions);
+            document.getElementById('back-to-services-drivers')?.addEventListener('click', showServiceOptions);
             
             // Set up modal close buttons
-            document.getElementById('close-about').addEventListener('click', toggleAbout);
-            document.getElementById('close-feedback').addEventListener('click', toggleFeedback);
+            document.getElementById('close-about')?.addEventListener('click', toggleAbout);
+            document.getElementById('close-feedback')?.addEventListener('click', toggleFeedback);
             
             // Set up floating feedback button
-            document.getElementById('floating-feedback').addEventListener('click', toggleFeedback);
+            document.getElementById('floating-feedback')?.addEventListener('click', toggleFeedback);
             
             // Set up feedback submission
-            document.getElementById('submit-feedback').addEventListener('click', function() {
+            document.getElementById('submit-feedback')?.addEventListener('click', function() {
                 const rating = document.querySelector('.fa-star.fas')?.getAttribute('data-rating') || 0;
                 const feedback = document.getElementById('feedback-text').value;
                 
@@ -1115,10 +1120,13 @@
             });
             
             // Set up chat with support
-            document.getElementById('chat-with-support').addEventListener('click', function() {
+            document.getElementById('chat-with-support')?.addEventListener('click', function() {
                 alert('This would open a chat with Fika support. In a real implementation, this would connect to a live chat system.');
             });
         });
+    </script>
+</body>
+</html>
     </script>
 </body>
 </html>
