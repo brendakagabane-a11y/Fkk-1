@@ -29,12 +29,54 @@ import {
     updateDoc,
     onSnapshot
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore.js";
-import { 
-    getStorage, 
-    ref, 
-    uploadBytes, 
-    getDownloadURL,
-    deleteObject 
+
+// Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyDSY0OUQOtY71QT1a4GnP-TNICJ8FNo35M",
+    authDomain: "sr-market-strategies.firebaseapp.com",
+    projectId: "sr-market-strategies",
+    storageBucket: "sr-market-strategies.firebasestorage.app",
+    messagingSenderId: "118475459994",
+    appId: "1:118475459994:web:e8ec9e157abb1ed3ec3e23",
+    measurementId: "G-HZ4E5L32XE"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ImgBB API Configuration (FREE - using your API key)
+const IMGBB_API_KEY = '053eefabdcc58e969e80204a6007a066';
+
+// Export services
+export { 
+    app, auth, db,
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword, 
+    signInWithPopup, 
+    GoogleAuthProvider, 
+    FacebookAuthProvider,
+    signInWithPhoneNumber,
+    RecaptchaVerifier,
+    updateProfile,
+    onAuthStateChanged,
+    signOut,
+    collection, 
+    addDoc, 
+    doc, 
+    setDoc,
+    getDoc,
+    getDocs,
+    serverTimestamp,
+    query,
+    where,
+    orderBy,
+    limit,
+    updateDoc,
+    onSnapshot,
+    IMGBB_API_KEY
+};    deleteObject 
 } from "https://www.gstatic.com/firebasejs/9.22.1/firebase-storage.js";
 
 // Firebase configuration
